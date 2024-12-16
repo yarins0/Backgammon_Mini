@@ -1,12 +1,12 @@
 ירין סולומון 206454530
 
-Backgammon AI Project
+# Backgammon AI Project
 A Python implementation of the classic board game Backgammon, featuring both human and AI players. This project allows you to play against an AI opponent or watch two AI players compete against each other. The AI uses heuristic evaluation and minimax strategies to make decisions.
 
-Introduction:
+# Introduction:
 This project implements a playable version of Backgammon with AI capabilities. The AI players are designed to simulate human-like decision-making by evaluating the game board and predicting future moves using heuristic and strategic methods. The goal is to provide an engaging experience whether you're playing against the computer or observing AI strategies.
 
-Features:
+# Features:
 Human vs. AI: Play against an AI opponent with configurable difficulty.
 AI vs. AI: Watch two AI players compete, showcasing different strategies.
 Heuristic Evaluation: The AI assesses board positions using weighted factors.
@@ -34,14 +34,13 @@ cd Backgammon_Mini
 
 Note: As of now, there are no external dependencies other than Python standard libraries.
 
-To start the game, run the run.py script:
-
-python run.py
+# Start the game
+run the run.py script: python run.py
 
 You will be prompted to select game modes and other configurations.
 ****Right now game modes depend on player array fed into BackgammonGameGUI in run.py***
 
-Game Modes:
+#Game Modes:
 Human vs. AI: Play against the AI.
 AI vs. AI: Watch two AI players compete.
 Human vs. Human: Play against another human (sharing the same computer).
@@ -55,7 +54,7 @@ A player must re-enter any checkers on the bar before making any other moves.
 The first player to bear off all their checkers wins the game.
 For detailed rules, you may refer to official Backgammon rules.
 
-AI Strategies
+# AI Strategies
 The AI in this project employs two primary strategies:
 
 1. Heuristic Evaluation
@@ -83,13 +82,11 @@ EVAL_DISTRIBUTION = {
     "home_board_strength": 0.1,
 }
 
-
 Modify the values to change the importance of each feature in the AI's evaluation function. Ensure that the sum of all weights equals 1.0.
 
 Changing the Minimax Depth
 The depth of the minimax search affects the AI's foresight. A greater depth allows the AI to plan further ahead but increases computation time.
 
-# Constants.py
 MIN_MAX_DEPTH = 2  # Increase this value for deeper search
 
 Note: Be cautious when increasing the depth, as it may significantly slow down the game.
