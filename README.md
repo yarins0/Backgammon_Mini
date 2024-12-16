@@ -12,7 +12,8 @@ AI vs. AI: Watch two AI players compete, showcasing different strategies.
 Heuristic Evaluation: The AI assesses board positions using weighted factors.
 Minimax Algorithm: Implements depth-limited minimax search for strategic planning.
 Customizable Parameters: Adjust evaluation weights and search depth to modify AI behavior.
-Project Structure
+
+# Project Structure:
 run.py: Entry point for running the game.
 Player.py: Contains the Player class, representing both human and AI players.
 AI_Player.py: Extends Player with AI capabilities, including move generation and evaluation.
@@ -20,9 +21,9 @@ Eval_position.py: Functions for evaluating board positions based on various crit
 Constants.py: Configuration constants and parameters used throughout the project.
 Board.py: Manages the game board state and visual representation.
 Utils.py: Utility functions used by multiple modules.
-Installation
-Prerequisites
-Python 3.7 or higher installed on your system.
+
+# Installation:
+Prerequisites- Python 3.7 or higher installed on your system.
 
 Installation Steps:
 Clone the Repository
