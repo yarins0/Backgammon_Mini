@@ -8,9 +8,13 @@ This project implements a playable version of Backgammon with AI capabilities. T
 
 # Features:
 Human vs. AI: Play against an AI opponent with configurable difficulty.
+
 AI vs. AI: Watch two AI players compete, showcasing different strategies.
+
 Heuristic Evaluation: The AI assesses board positions using weighted factors.
+
 Minimax Algorithm: Implements depth-limited minimax search for strategic planning.
+
 Customizable Parameters: Adjust evaluation weights and search depth to modify AI behavior.
 
 # Project Structure:
