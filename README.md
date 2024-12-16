@@ -24,7 +24,7 @@ Installation
 Prerequisites
 Python 3.7 or higher installed on your system.
 
-Installation Steps
+Installation Steps:
 Clone the Repository
 git clone https://github.com/yarins0/Backgammon_Mini.git
 
@@ -40,14 +40,14 @@ run the run.py script: python run.py
 You will be prompted to select game modes and other configurations.
 ****Right now game modes depend on player array fed into BackgammonGameGUI in run.py***
 
-#Game Modes:
+# Game Modes:
 Human vs. AI: Play against the AI.
 AI vs. AI: Watch two AI players compete.
 Human vs. Human: Play against another human (sharing the same computer).
 Game Rules
 Backgammon is a two-player game where each player moves their checkers according to the roll of two dice. The objective is to move all your checkers into your home board and then bear them off.
 
-Basic Rules:
+# Basic Rules:
 Players move checkers in opposite directions.
 A point occupied by a single checker is a blot. If an opponent lands on a blot, it is hit and placed on the bar.
 A player must re-enter any checkers on the bar before making any other moves.
