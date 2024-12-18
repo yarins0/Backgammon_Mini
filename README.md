@@ -1,4 +1,4 @@
-ירין סולומון 206454530
+@author: Yarin Solomon
 
 # Backgammon AI Project
 A Python implementation of the classic board game Backgammon, featuring both human and AI players. This project allows you to play against an AI opponent or watch two AI players compete against each other. The AI uses heuristic evaluation and minimax strategies to make decisions.
@@ -47,9 +47,12 @@ You will be prompted to select game modes and other configurations.
 
 # Game Modes:
 Human vs. AI: Play against the AI.
+
 AI vs. AI: Watch two AI players compete.
+
 Human vs. Human: Play against another human (sharing the same computer).
-Game Rules
+
+# Game Rules:
 Backgammon is a two-player game where each player moves their checkers according to the roll of two dice. The objective is to move all your checkers into your home board and then bear them off.
 
 # Basic Rules:
@@ -77,6 +80,7 @@ The AI uses a depth-limited minimax algorithm with alpha-beta pruning for strate
 Customization
 Adjusting AI Evaluation Parameters
 The AI's behavior can be tailored by adjusting the evaluation weights in Constants.py.
+Also evaluation methods and tree depths can be changed.
 
 # Constants.py
 EVAL_DISTRIBUTION = {
