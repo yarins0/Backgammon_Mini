@@ -63,8 +63,8 @@ class BackgammonGameGUI:
 
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
-            i, j = self.get_player_indices(self.current_game_index)
-            self.initialize_players(i, j)
+            self.black_idx, self.white_idx = self.get_player_indices(self.current_game_index)
+            self.initialize_players(self.black_idx, self.white_idx)
             self.current_game_index += 1
             self.start_game()
         else:
@@ -82,7 +82,6 @@ class BackgammonGameGUI:
                 print("Winner is a human player.")
             self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
             
-
     def start_game(self):
         print("Starting new game.")
         self.clear_board()
@@ -106,16 +105,6 @@ class BackgammonGameGUI:
         # Start the first turn with white
         self.turn = self.WHITE
         self.prepare_turn()
-
-    def get_current_player_index(self):
-        current_player = self.current_player()
-        for idx, player in enumerate(self.players):
-            # Compare the current player with players list to find the index
-            if isinstance(current_player, AI_Player) and player[0] == self.AI and player[1] == current_player.ratios:
-                return idx
-            elif isinstance(current_player, Human_Player) and player == self.HUMAN:
-                return idx
-        return -1  # If not found
 
     def get_player_indices(self, game_index):
         # Calculate player indices for the current game
@@ -417,7 +406,10 @@ class BackgammonGameGUI:
             self.auto_render = False  # Stop automatic rendering
 
             # Update scores
-            player_idx = self.get_current_player_index()
+            if self.current_player().color == self.WHITE:
+                player_idx = self.white_idx
+            else:
+                player_idx = self.black_idx
             self.scores[player_idx] += 1
 
             # Schedule the next game after a delay or end the session
