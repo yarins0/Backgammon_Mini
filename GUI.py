@@ -1,15 +1,15 @@
 from tkinter import *
-from Player import *
-from AI_Player import *
-from Human_Player import *
-from game_logic import *
+from Player import Player
+from AI_Player import AI_Player
+from AI_Player2 import AI_Player2
+from Human_Player import Human_Player
+from game_logic import roll
+from BoardTree import BoardTree
 from Constants import *
-
 import random
 
-TRI_HEIGHT = 200
 TRI_WIDTH = 50
-
+TRI_HEIGHT = 200
 class BackgammonGameGUI:
     AI = "AI"
     HUMAN = "Human"
@@ -35,11 +35,31 @@ class BackgammonGameGUI:
     def initialize_players(self, i, j):
         black_player, black_ratios = self.parse_player(self.players[i])
         white_player, white_ratios = self.parse_player(self.players[j])
-        self.black = AI_Player(self.BLACK, black_ratios) if black_player == self.AI else Human_Player(self.BLACK)
-        self.white = AI_Player(self.WHITE, white_ratios) if white_player == self.AI else Human_Player(self.WHITE)
+
+        # Initialize the game board
+        self.board = [0] * 28
+        self.setup_initial_board()
+
+        # Create player instances with the shared board
+        self.black = AI_Player2(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
+        self.white = AI_Player2(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
 
         self.white.set_other(self.black)
         self.black.set_other(self.white)
+
+    def setup_initial_board(self):
+        # Set up the initial board positions for a new game
+        self.board = [0] * 28
+        # White pieces
+        self.board[0] = 2
+        self.board[11] = 5
+        self.board[16] = 3
+        self.board[18] = 5
+        # Black pieces (negative numbers)
+        self.board[23] = -2
+        self.board[12] = -5
+        self.board[7] = -3
+        self.board[5] = -5
 
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
@@ -48,17 +68,25 @@ class BackgammonGameGUI:
             self.current_game_index += 1
             self.start_game()
         else:
+            # All games are completed
             print("All games completed.")
             print("Scores:", self.scores)
             winner_idx = self.scores.index(max(self.scores))
+            winner_player = self.players[winner_idx]
             print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
-            print(f"winners ratios: {self.players[winner_idx].ratios}")
+            # Print the winner's ratios
+            if isinstance(winner_player, list) and len(winner_player) == 3 and winner_player[0] == self.AI:
+                best_ratio = winner_player[1]
+                print(f"The best ratio is: {best_ratio}")
+            else:
+                print("Winner is a human player.")
             self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
+            
 
     def start_game(self):
         print("Starting new game.")
         self.clear_board()
-        
+
         # Initialize the board history
         self.board_history = []
         self.current_board_index = -1
@@ -66,12 +94,13 @@ class BackgammonGameGUI:
 
         # Ensure that board history is initialized before accessing it
         if self.board_history:
-            self.white.set_board_tree(BoardTree(self.board_history[self.current_board_index], 0.5))
-            self.black.set_board_tree(BoardTree(self.board_history[self.current_board_index], 0.5))
+            initial_board = self.board_history[self.current_board_index]
+            self.white.set_board_tree(BoardTree(initial_board, 0.5))
+            self.black.set_board_tree(BoardTree(initial_board, 0.5))
 
         # Print starting game information
-        black_type = "AI" if isinstance(self.black, AI_Player) else "Human"
-        white_type = "AI" if isinstance(self.white, AI_Player) else "Human"
+        black_type = "AI" if not self.black.is_human else "Human"
+        white_type = "AI" if not self.white.is_human else "Human"
         print(f"Starting game between {white_type} player (white) and {black_type} player (black)")
 
         # Start the first turn with white
@@ -96,13 +125,10 @@ class BackgammonGameGUI:
         if j >= i:
             j += 1
         return i, j
-    
+
     def parse_player(self, player):
         """
         Parse the player input to determine the type and ratios.
-        
-        :param player: The player input, which can be a string or a list.
-        :return: A tuple containing the player type and ratios (if applicable).
         """
         if isinstance(player, list) and len(player) == 2 and player[0] == self.AI:
             return self.AI, player[1]  # AI with specified ratios
@@ -142,7 +168,7 @@ class BackgammonGameGUI:
         self.title = StringVar(value=f"It's {self.turn}'s turn! Roll the dice!")
         self.time_remaining = StringVar()
 
-        # Now create the labels with self.top_frame as the parent
+        # Create the labels
         self.turnInst = Label(self.top_frame, textvariable=self.title)
         self.timer_label = Label(self.top_frame, textvariable=self.time_remaining)
 
@@ -189,12 +215,10 @@ class BackgammonGameGUI:
                 fill=color,
                 outline='black'  # Add black frame
             )
-            
+
     def setup_board_ui(self):
         # Draw the triangles on the canvas
         self.draw_triangles()
-
-        # The top_frame and labels are already created and packed in create_board
 
         # Create and pack the button frame
         self.button_frame = Frame(self.window)
@@ -216,7 +240,7 @@ class BackgammonGameGUI:
         # Now pack the canvas
         self._canvas.pack(pady=10)
 
-        # Bindings
+        # Bindings for human move events
         self._canvas.bind('<Button-1>', self.humanMove1)
         self._canvas.bind('<Button-3>', self.humanMove2)
 
@@ -245,47 +269,58 @@ class BackgammonGameGUI:
     def render(self):
         if self.auto_render:
             # Render the board state
-            self.render_board(self.status_format())
+            self.render_board(self.board)
         self._canvas.after(50, self.render)
 
     def render_board(self, board):
-        self._canvas.delete('piece')
+        self._canvas.delete('piece')  # Clear the existing pieces
         # Render pieces based on the board state
         for position, count in enumerate(board):
             if count != 0:
-                color = 'white' if count > 0 else 'black'
+                color = 'white' if (count > 0 and position <= 23) or (position >= 24 and position % 2 == 0) else 'black'
                 count = abs(count)
                 for pos in range(count):
                     if position < 12:
-                        # Adjust the position calculation for the top row
-                        self._canvas.create_oval((11 - position) * TRI_WIDTH, pos * TRI_WIDTH, (12 - position) * TRI_WIDTH,
-                                                (pos + 1) * TRI_WIDTH, fill=color, tags='piece')
+                        # Top row positions 11 to 0
+                        self._canvas.create_oval(
+                            (11 - position) * TRI_WIDTH, pos * TRI_WIDTH,
+                            (12 - position) * TRI_WIDTH, (pos + 1) * TRI_WIDTH,
+                            fill=color, tags='piece'
+                        )
                     elif position < 24:
-                        # Adjust the position calculation for the bottom row
-                        self._canvas.create_oval((position - 12) * TRI_WIDTH, int(self._canvas.cget('height')) - ((pos + 1) * TRI_WIDTH),
-                                                (position - 11) * TRI_WIDTH, int(self._canvas.cget('height')) - (pos * TRI_WIDTH),
-                                                fill=color, tags='piece')
-                    # Handle captured and out pieces
-                    elif position == 24:  # White out
-                        self._canvas.create_oval(0, pos * TRI_WIDTH, TRI_WIDTH, (pos + 1) * TRI_WIDTH, fill='white', tags='piece')
-                    elif position == 25:  # Black out
-                        self._canvas.create_oval(0, int(self._canvas.cget('height')) - ((pos + 1) * TRI_WIDTH),
-                                                TRI_WIDTH, int(self._canvas.cget('height')) - (pos * TRI_WIDTH), fill='black', tags='piece')
-                    elif position == 26:  # White captured
-                        self._canvas.create_oval(12 * TRI_WIDTH, pos * TRI_WIDTH, 13 * TRI_WIDTH, (pos + 1) * TRI_WIDTH, fill='white', tags='piece')
-                    elif position == 27:  # Black captured
-                        self._canvas.create_oval(12 * TRI_WIDTH, int(self._canvas.cget('height')) - ((pos + 1) * TRI_WIDTH),
-                                                13 * TRI_WIDTH, int(self._canvas.cget('height')) - (pos * TRI_WIDTH), fill='black', tags='piece')
+                        # Bottom row positions 12 to 23
+                        self._canvas.create_oval(
+                            (position - 12) * TRI_WIDTH, int(self._canvas.cget('height')) - ((pos + 1) * TRI_WIDTH),
+                            (position - 11) * TRI_WIDTH, int(self._canvas.cget('height')) - (pos * TRI_WIDTH),
+                            fill=color, tags='piece'
+                        )
+                    elif position == 24:  # White captured pieces at top right corner
+                        # Adjust coordinates for top right corner
+                        self._canvas.create_oval(
+                            12 * TRI_WIDTH, (pos) * TRI_WIDTH,
+                            13 * TRI_WIDTH, (pos + 1) * TRI_WIDTH,
+                            fill='white', tags='piece'
+                        )
+                    elif position == 25:  # Black captured pieces at bottom right corner
+                        # Adjust coordinates for bottom right corner
+                        self._canvas.create_oval(
+                            12 * TRI_WIDTH, int(self._canvas.cget('height')) - ((pos + 1) * TRI_WIDTH),
+                            13 * TRI_WIDTH, int(self._canvas.cget('height')) - (pos * TRI_WIDTH),
+                            fill='black', tags='piece'
+                        )
+                    # Handle borne-off pieces if needed
         self._canvas.update_idletasks()  # Ensure the canvas is refreshed
-    
+
     def humanMove1(self, event):
         if self.current_board_index != len(self.board_history) - 1:
             self.title.set("You can only make moves on the latest board state.")
             return
 
         self.select(event)
-        piece = self.selected
-        if piece not in self.current_player().get_pieces():
+        position = self.selected
+        current_player = self.current_player()
+
+        if not current_player.is_piece_at_position(position, current_player.color):
             self.title.set("That's an invalid piece to pick")
             return
         self.title.set('Choose a position to move it to (right click)')
@@ -296,70 +331,83 @@ class BackgammonGameGUI:
             return
 
         self.goto(event)
-        distance = self.destination - self.selected
-        if self.turn == self.BLACK:
-            distance = -distance
-        rolls_list = self.rolls.get().split()
-
+        from_pos = self.selected
+        to_pos = self.destination
         current_player = self.current_player()
-
-        if DEBUG_MODE:
-            print(f"Debug: Selected piece: {self.selected}, Destination: {self.destination}, Distance: {distance}")
-            print(f"Debug: Available rolls: {rolls_list}")
+        rolls_list = self.rolls.get().split()
 
         if not rolls_list:
             self.title.set("No dice rolls available to make a move.")
             return
 
-        # Check if the move is valid and the distance matches an available roll
-        if current_player.valid_move(self.selected, self.destination, rolls_list) and str(abs(distance)) in rolls_list:
-            try:
-                current_player.move_piece(distance, self.selected, rolls_list)
-                rolls_list.remove(str(abs(distance)))  # Remove the used die
-                self.rolls.set(' '.join(rolls_list))
-                self.update_and_render_board()
-            except ValueError:
-                self.title.set("Invalid move!")
-        else:
-            self.title.set("You can't move your piece there!")
+        # Check if the move is valid
+        try:
+            used_die_value = current_player.move_piece(from_pos, to_pos, rolls_list)
+            rolls_list.remove(str(used_die_value))  # Remove the used die
+            self.rolls.set(' '.join(rolls_list))
+            self.update_and_render_board()
+        except ValueError as e:
+            self.title.set(str(e))
+
 
         if not self.rolls.get():
             print(f"Ended human ({self.turn}) turn")
+            self.selected = None
+            self.destination = None
             self.end_turn()
         else:
             self.title.set('Choose a piece to move')
 
     def select(self, event):
         x = event.x // TRI_WIDTH
-        y = event.y // TRI_HEIGHT
+        y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
 
         if y == 0:
-            self.selected = 12 - x
+            self.selected = 11 - x  # Top row positions 11 to 0
         elif y == 1:
-            self.selected = 0
+            self.selected = self.current_player().get_captured_position()
         else:
-            self.selected = 13 + x
+            self.selected = x + 12  # Bottom row positions 12 to 23
+
+        if self.current_player().color == self.white.color:
+            if self.selected == -1: # White captured pieces
+                self.selected = 24
+        else:
+            if self.selected == 24: # Black captured pieces
+                self.selected = 25
+        #print(f"Source selected: {self.selected} (x={x}, y={y})")
 
     def goto(self, event):
         x = event.x // TRI_WIDTH
-        y = event.y // TRI_HEIGHT
+        y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
 
         if y == 0:
-            self.destination = 12 - x
+            self.destination = 11 - x  # Top row positions 11 to 0
         elif y == 1:
-            self.destination = 0
+            self.destination = self.current_player().get_captured_position()
         else:
-            self.destination = 13 + x
+            self.destination = x + 12  # Bottom row positions 12 to 23
+
+        if self.current_player().color == self.black.color:
+            if self.destination == -1: # blacks escaped pieces
+                self.destination = 27
+        else:
+            if self.destination == 24: # whites escaped pieces
+                self.destination = 26   
+
+        #print(f"Destination selected: {self.destination} (x={x}, y={y})")
+
 
     def current_player(self):
         return self.white if self.turn == self.WHITE else self.black
 
     def other_player(self):
         return self.black if self.turn == self.WHITE else self.white
-    
+
     def check_win_condition(self):
-        if self.current_player().win():
-            winner_color = self.current_player().color
+        current_player = self.current_player()
+        if current_player.win():
+            winner_color = current_player.color
             self.title.set(f'{winner_color.capitalize()} has won the game!')
 
             self.rollButton.config(state=DISABLED)
@@ -372,7 +420,7 @@ class BackgammonGameGUI:
             player_idx = self.get_current_player_index()
             self.scores[player_idx] += 1
 
-            # Schedule the next game after a delay
+            # Schedule the next game after a delay or end the session
             if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
                 self.window.after(2000, self.start_next_game)
             else:
@@ -384,8 +432,10 @@ class BackgammonGameGUI:
 
             return True
         return False
-    
+
     def switch_turn(self):
+        if DEBUG_MODE:
+            print(f"{self.board}")
         self.turn = self.WHITE if self.turn == self.BLACK else self.BLACK
 
     def end_turn(self):
@@ -394,18 +444,15 @@ class BackgammonGameGUI:
         self.time_remaining.set('')
 
         if self.check_win_condition():
-            return
+            return # Do not proceed if the game is over
 
         self.switch_turn()
         self.prepare_turn()
 
     def prepare_turn(self):
-        if DEBUG_MODE:
-            self.print_board(self.board_history[self.current_board_index])
-
         current_player = self.current_player()
 
-        if current_player.isHuman():
+        if current_player.is_human:
             self.title.set(f"It's the {current_player.color} player's turn! Roll the dice!")
             self.rollButton.config(state=NORMAL)
             self.endButton.config(state=NORMAL)
@@ -418,58 +465,41 @@ class BackgammonGameGUI:
     def AI_turn(self):
         computer_roll = roll()
         print(f"Computer roll: {computer_roll}")
-        
+
         # Convert the dice roll to strings before joining
         rolled = ' '.join(map(str, computer_roll))
         self.rolls.set(rolled)
         self.title.set(f"AI ({self.current_player().color}) rolled: {rolled}")
 
-        board = self.board_history[self.current_board_index]
+        #try:
+        move_sequence = self.current_player().play(computer_roll)
+        if move_sequence:
+            for move in move_sequence:
+                # Execute each move
+                from_pos, to_pos = move
+                self.current_player().move_piece(from_pos, to_pos, computer_roll)
+                self.update_and_render_board()
+                self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
 
-        try:
-            move_sequence = self.current_player().play(board, computer_roll)
-            if move_sequence:
-                for move in move_sequence:
-                    # Execute each move
-                    self.current_player().move_piece(abs(move[0] - move[1]), move[0], computer_roll)
-                    self.update_and_render_board()
-                    self.window.after(AI_DELAY)  # Optional: pause for Xms between moves
-
-        except ValueError as e:
-            print(e)
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+        #except ValueError as e:
+            #print(e)
+        #except Exception as e:
+            #print(f"Unexpected error: {e}")
 
         print(f"Ended AI ({self.turn}) turn")
-        self.window.after(2*AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
-
-
-    def print_board(self, board):
-        print("Board:", board)
-        print("White pieces:", self.white.get_pieces())
-        print("Black pieces:", self.black.get_pieces())
-
-    def status_format(self):
-        return generate_board(self.white.get_pieces(), self.black.get_pieces())
+        self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
 
     def update_and_render_board(self):
         # Update the board state and render it immediately
-        board = self.status_format()
-        self.board_history.append(board)
+        self.board_history.append(self.board.copy())
         self.current_board_index += 1
-        if DEBUG_MODE:
-            print(f"Updating board to: {board}")  # Debugging output
-        self.render_board(board)
-        if DEBUG_MODE:
-            print("Board updated and rendered.")  # Debugging output
+        self.render_board(self.board)
 
     def show_previous_board(self):
         if self.current_board_index > 0:
             self.auto_render = False  # Pause automatic rendering
             self.current_board_index -= 1
             previous_board = self.board_history[self.current_board_index]
-            if DEBUG_MODE:
-                print("Previous Board State:", previous_board)
             self.render_board(previous_board)
         else:
             print("No previous board state available.")
@@ -479,10 +509,6 @@ class BackgammonGameGUI:
             self.auto_render = False  # Pause automatic rendering
             self.current_board_index += 1
             next_board = self.board_history[self.current_board_index]
-            if DEBUG_MODE:
-                print("Next Board State:", next_board)
             self.render_board(next_board)
         else:
             print("No next board state available.")
-
-

@@ -1,33 +1,52 @@
 from tkinter import Tk
-from GUI import *  # Ensure this import matches your file structure
+from GUI import BackgammonGameGUI
+import random
+
 import random
 
 def generate_random_ratios():
-    # Generate random ratios that sum to 1
-    ratios = [random.random() for _ in range(5)]
-    total = sum(ratios)
+    # Generate random integers that sum to 100
+    ratios = []
+    remaining = 100
+    num_factors = 6  # Number of ratios to generate
+    for _ in range(num_factors - 1):
+        r = random.randint(1, remaining - (num_factors - len(ratios) - 1))
+        ratios.append(r)
+        remaining -= r
+    ratios.append(remaining)  # Assign the remaining value to the last ratio
+
+    # Shuffle the ratios to randomize their order
+    random.shuffle(ratios)
+
+    # Convert ratios to decimal form, ensuring they are multiples of 0.01
     return {
-        "prime_structure": ratios[0] / total,
-        "anchors": ratios[1] / total,
-        "blots": ratios[2] / total,
-        "race_advantage": ratios[3] / total,
-        "home_board_strength": ratios[4] / total
+        "prime_structure": ratios[0] / 100,
+        "anchors": ratios[1] / 100,
+        "blots": ratios[2] / 100,
+        "race_advantage": ratios[3] / 100,
+        "home_board_strength": ratios[4] / 100,
+        "captured_pieces": ratios[5] / 100
     }
 
-# Create a list of players with different AI configurations
-players = []
+if __name__ == "__main__":
+    window = Tk()
+    window.title("Backgammon AI Tournament")
 
-# Generate 10 different AI configurations
-for _ in range(10):
-    ratios = generate_random_ratios()
-    players.append(["AI", ratios])
+    # Generate a list of AI players with random ratios
+    players = []
+    num_ai_players = 50  # Adjust the number of AI players
+    for _ in range(num_ai_players):
+        ratios = generate_random_ratios()
+        players.append(["AI", ratios])
 
-# Initialize the Tkinter window
-window = Tk()
-window.title("Backgammon Game")
+    # Initialize the game GUI with the list of players
+    game_gui = BackgammonGameGUI(window, players)
 
-# Create an instance of the BackgammonGameGUI with the players array
-game = BackgammonGameGUI(window, players)
+    # Start the GUI event loop
+    window.mainloop()
 
-# Start the Tkinter main loop
-window.mainloop()
+    i=0
+    for player in players:
+        if player[0] == "AI":
+            print(f"AI player {i} with ratios: {player[1]}")
+        i += 1
