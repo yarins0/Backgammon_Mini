@@ -27,12 +27,11 @@ class Player:
 
     def win(self):
         # Check if the player has all 15 pieces borne off (escaped)
-        escaped_position = self.get_escaped_position()
-        return abs(self.board[escaped_position]) == 15
+        return self.board[self.get_escaped_position()] == 15
 
     def lose(self):
         # Return True if the opponent has no pieces left on the board
-        return self.other.count_pieces_on_board() == 0 and self.board[self.other.get_escaped_position()] == 15
+        return self.board[self.other.get_escaped_position()] == 15
 
     def move_piece(self, from_pos, to_pos, rolls):
         # Ensure rolls is a list of integers
