@@ -61,6 +61,17 @@ class BoardTree:
         for child in node.children:
             self.traverse(child, depth + 1)
 
+    def reset_tree(self , board, evaluation,  color):
+        """
+        Reset the tree by clearing all nodes except the root.
+        """
+        # Update the board tree root with the current board state
+        self.root.board = board
+        self.root.evaluation = evaluation
+        self.root.path = []
+        self.root.player_turn = color
+        self.root.children = []  # Clear previous children
+        
     def update_root(self, new_root):
         self.root = new_root
 
