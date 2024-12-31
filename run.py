@@ -23,7 +23,7 @@ ratios2 = {
 players1 = ["Human", "Human"]
 players2 = ["Human", "AI"]
 players3 = ["AI", "Human"]
-players4 = ["AI", "AI", "AI", "AI"]
+players4 = ["AI", "AI"]
 players5 = [["AI",ratios1], "AI"]
 players6 = [["AI",ratios1], ["AI",ratios2]]
 # Initialize the Tkinter window
@@ -32,7 +32,7 @@ window.title("Backgammon Game")
 
 # Create an instance of the BackgammonGame
 
-game = BackgammonGameGUI(window, players5)
+game = BackgammonGameGUI(window, players4)
 
 # Start the Tkinter main loop
 window.mainloop()

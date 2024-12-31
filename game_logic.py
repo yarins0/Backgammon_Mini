@@ -1,15 +1,10 @@
-'''Creates a class for Human backgammon pieces
-Created 2024
-@author: Anni Ainesaz
-'''
-
 import random
 import time
 
 # game_logic.py
 
 from Player import *
-from AI_Player2 import *
+from AI_Player import *
 from Human_Player import *
 
 class BackgammonGameLogic:
