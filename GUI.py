@@ -1,7 +1,6 @@
 from tkinter import *
 from Player import Player
 from AI_Player import AI_Player
-from AI_Player2 import AI_Player2
 from Human_Player import Human_Player
 from game_logic import roll
 from BoardTree import BoardTree
@@ -41,8 +40,8 @@ class BackgammonGameGUI:
         self.setup_initial_board()
 
         # Create player instances with the shared board
-        self.black = AI_Player2(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
-        self.white = AI_Player2(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
+        self.black = AI_Player(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
+        self.white = AI_Player(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
 
         self.white.set_other(self.black)
         self.black.set_other(self.white)
@@ -385,7 +384,6 @@ class BackgammonGameGUI:
                 self.destination = 26   
 
         #print(f"Destination selected: {self.destination} (x={x}, y={y})")
-
 
     def current_player(self):
         return self.white if self.turn == self.WHITE else self.black

@@ -1,18 +1,34 @@
 from Player import Player
+from BoardTree import BoardTree, BoardNode
 from Constants import *
 from Eval_position import evaluate_position
 import copy
+from itertools import permutations
 
 class AI_Player(Player):
     def __init__(self, color: str, board, ratios=EVAL_DISTRIBUTION):
         super().__init__(color, board, is_human=False)
         self.ratios = ratios
+        # Initialize the board tree with the current board state
+        self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
     def play(self, roll: list) -> list:
         if CHOSEN_EVAL_METHOD == 1:
             return self.heuristic_play(roll)
         else:
-            return self.strategic_play(roll, depth=MIN_MAX_DEPTH)
+            # Update the board tree root with the current board state
+            self.board_tree.root.board = copy.deepcopy(self.board)
+            self.board_tree.root.evaluation = evaluate_position(self.board, self.ratios)
+            self.board_tree.root.path = []
+            self.board_tree.root.player_turn = self.color
+            self.board_tree.root.children = []  # Clear previous children
+
+            # Ensure the tree is expanded to the required depth using the actual roll
+            self.ensure_tree_depth(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
+
+            executed_moves = self.strategic_play(roll, depth=MIN_MAX_DEPTH)
+
+        return executed_moves
 
     def heuristic_play(self, roll: list) -> list:
         all_moves = self.generate_all_moves(self.board, roll)
@@ -29,14 +45,14 @@ class AI_Player(Player):
         best_score = float('-inf') if self.color == "white" else float('inf')
         best_move = None
 
-        all_moves = self.generate_all_moves(self.board, roll)
+        # Start from the current root of the board tree
+        current_node = self.board_tree.root
 
-        for moves in all_moves:
-            new_board = self.simulate_moves(copy.deepcopy(self.board), moves)
-            score = self.minimax(new_board, depth - 1, False)
+        for child in current_node.children:
+            score = self.minimax(child, depth - 1)
             if (self.color == "white" and score > best_score) or (self.color == "black" and score < best_score):
                 best_score = score
-                best_move = moves
+                best_move = child.path
 
         if best_move:
             print(f"Strategic AI ({self.color}) executed moves: {best_move} with score: {best_score}")
@@ -45,30 +61,70 @@ class AI_Player(Player):
             print("No valid moves available for Strategic AI.")
             return []
 
-    def minimax(self, board: list, depth: int, is_maximizing_player: bool) -> float:
-        if depth == 0 or self.win_on_board(board):
-            return evaluate_position(board, self.ratios)
+    def minimax(self, node: BoardNode, depth: int) -> float:
+        if depth == 0 or self.win_on_board(node.board):
+            return evaluate_position(node.board, self.ratios)
 
-        if is_maximizing_player:
+        if node.player_turn == "white":
             max_eval = float('-inf')
-            possible_rolls = self.get_possible_rolls()
-            for roll in possible_rolls:
-                all_moves = self.generate_all_moves(board, roll)
-                for moves in all_moves:
-                    new_board = self.simulate_moves(copy.deepcopy(board), moves)
-                    eval = self.minimax(new_board, depth - 1, False)
-                    max_eval = max(max_eval, eval)
+            for child in node.children:
+                eval = self.minimax(child, depth - 1)
+                max_eval = max(max_eval, eval)
             return max_eval
         else:
             min_eval = float('inf')
-            possible_rolls = self.get_possible_rolls()
-            for roll in possible_rolls:
-                all_moves = self.generate_all_moves(board, roll)
+            for child in node.children:
+                eval = self.minimax(child, depth - 1)
+                min_eval = min(min_eval, eval)
+                return min_eval
+            
+    
+    def ensure_tree_depth(self, node: BoardNode, depth: int, current_roll=None):
+        if depth == 0:
+            return
+
+        if node.player_turn == self.color:
+            if current_roll is None:
+                print("Error: current_roll is None during AI's turn.")
+                return
+            # Use the actual roll when it's the AI's turn
+            rolls_to_use = [current_roll]
+        else:
+            # Get all possible dice rolls for the opponent's turn
+            rolls_to_use = self.get_possible_rolls()
+
+        for roll in rolls_to_use:
+            # Generate all possible moves from the current node for each roll
+            all_moves = self.generate_all_moves(node.board, roll)
+            if not all_moves:
+                # If no moves are possible, create a child with the same board
+                next_player_turn = self.other.color if node.player_turn == self.color else self.color
+                new_node = BoardNode(
+                    node.board,
+                    evaluate_position(node.board, self.ratios),
+                    [],
+                    next_player_turn
+                )
+                node.add_child(new_node)
+                # Recursively ensure depth for the new child
+                self.ensure_tree_depth(new_node, depth - 1, current_roll)
+            else:
                 for moves in all_moves:
-                    new_board = self.simulate_moves(copy.deepcopy(board), moves)
-                    eval = self.minimax(new_board, depth - 1, True)
-                    min_eval = min(min_eval, eval)
-            return min_eval
+                    new_board = self.simulate_moves(copy.deepcopy(node.board), moves)
+
+                    # Determine the next player's turn
+                    next_player_turn = self.other.color if node.player_turn == self.color else self.color
+
+                    new_node = BoardNode(
+                        new_board,
+                        evaluate_position(new_board, self.ratios),
+                        moves,
+                        next_player_turn
+                    )
+                    node.add_child(new_node)
+
+                    # Recursively ensure depth for the new child
+                    self.ensure_tree_depth(new_node, depth - 1, current_roll)
 
     def get_possible_rolls(self) -> list:
         """
@@ -99,15 +155,11 @@ class AI_Player(Player):
 
     def generate_all_moves(self, board: list, roll: list):
         all_moves = []
-        if roll[0] != roll[-1]:
-            # Include moves that starts with the second die if they are different
-            self.generate_moves_recursive(board, roll[::-1], [], all_moves)
         self.generate_moves_recursive(board, roll, [], all_moves)
-        print(f"AI ({self.color}) generated {len(all_moves)} moves for roll {roll}")
-        print(all_moves)
         return all_moves
-    
-    def generate_moves_recursive(self, board: list, rolls: list, move_sequence: list, all_moves: list, pieces_on_bar: int = None):
+
+    def generate_moves_recursive(self, board: list, rolls: list, move_sequence: list,
+                                all_moves: list, pieces_on_bar: int = None):
         if pieces_on_bar is None:
             # Initialize the number of pieces on the bar for this recursion branch
             pieces_on_bar = board[self.get_captured_position()]
@@ -116,11 +168,24 @@ class AI_Player(Player):
             all_moves.append(move_sequence)
             return
 
-        roll = rolls[0]
-        remaining_rolls = rolls[1:]
+        possible_moves_found = False  # Flag to check if any moves were found in this call
 
-        possible_moves = self.generate_valid_moves([roll], board)
+        # Sort rolls to prioritize higher die
+        sorted_rolls = sorted(rolls, reverse=True)
 
+        for die_index, roll in enumerate(sorted_rolls):
+            remaining_rolls = sorted_rolls[:die_index] + sorted_rolls[die_index + 1:]
+            possible_moves = self.generate_valid_moves([roll], board)
+
+            # Process possible moves using the helper function
+            possible_moves_found = self.process_possible_moves(possible_moves, board, remaining_rolls,
+                                        move_sequence, all_moves, pieces_on_bar)
+            
+        if not possible_moves_found:
+            # No moves possible with any die
+            all_moves.append(move_sequence)
+
+    def process_possible_moves(self, possible_moves, board, remaining_rolls, move_sequence, all_moves, pieces_on_bar):
         if pieces_on_bar > 0:
             # Limit moves from the bar based on the number of pieces available
             possible_moves = [move for move in possible_moves if move[0] == self.get_captured_position()]
@@ -131,19 +196,23 @@ class AI_Player(Player):
         if possible_moves:
             for move in possible_moves:
                 new_board = copy.deepcopy(board)
-                valid_move = self.simulate_move(new_board, move)
-
-                if new_board == board:
-                    continue  # Move was invalid; skip
+                self.simulate_move(new_board, move)
 
                 new_pieces_on_bar = pieces_on_bar
                 if move[0] == self.get_captured_position():
                     new_pieces_on_bar -= 1  # Decrement captured pieces
 
-                self.generate_moves_recursive(new_board, remaining_rolls, move_sequence + [move], all_moves, new_pieces_on_bar)
-        else:
-            # Proceed to the next die even if no moves were found with the current die
-            self.generate_moves_recursive(board, remaining_rolls, move_sequence, all_moves, pieces_on_bar)
+                # Continue recursion with remaining rolls
+                self.generate_moves_recursive(
+                    new_board,
+                    remaining_rolls,
+                    move_sequence + [move],
+                    all_moves,
+                    new_pieces_on_bar
+                )
+            return True  # Moves were found and processed
+        return False  # No moves were found
+    
                 
     def generate_valid_moves(self, roll_values: list, board: list) -> list:
         if not isinstance(roll_values, list):
@@ -169,46 +238,29 @@ class AI_Player(Player):
         return moves
 
     def calculate_possible_to_positions(self, from_pos, roll_value, board):
-        possible_to_positions = []
-
+        to_positions = []
         if from_pos == self.get_captured_position():
             # Re-entering from the bar
-            if self.color == "white":
-                to_pos = roll_value - 1  # Positions 0-5 correspond to rolls 1-6
-            else:  # black
-                to_pos = 24 - roll_value  # Positions 23-18 correspond to rolls 1-6
-            # Check if the position is not blocked
-            if not self.is_blocked_on_board(to_pos, board):
-                possible_to_positions.append(to_pos)
+            to_pos = roll_value - 1 if self.color == "white" else 24 - roll_value
+            to_positions.append(to_pos)
         else:
-            # Regular move logic
-            if self.color == "white":
+            # Regular move
+            if self.color == 'white':
                 to_pos = from_pos + roll_value
-                # Check for bearing off
                 if to_pos >= 24:
-                    if self.can_bear_off(from_pos):
-                        to_pos = self.get_escaped_position()
-                    else:
-                        return possible_to_positions  # No valid moves
-            else:  # black
+                    to_pos = self.get_escaped_position()
+            else:
                 to_pos = from_pos - roll_value
-                # Check for bearing off
                 if to_pos < 0:
-                    if self.can_bear_off(from_pos):
-                        to_pos = self.get_escaped_position()
-                    else:
-                        return possible_to_positions  # No valid moves
-
-            # Check if the move is not blocked
-            if not self.is_blocked_on_board(to_pos, board):
-                possible_to_positions.append(to_pos)
-
-        return possible_to_positions
+                    to_pos = self.get_escaped_position()
+            to_positions.append(to_pos)
+        return to_positions
 
     def simulate_moves(self, board: list, moves: list) -> list:
         for move in moves:
-            board = self.simulate_move(board, move)
+            self.simulate_move(board, move)
         return board
+
     def simulate_move(self, board: list, move: tuple) -> list:
         from_pos, to_pos = move
 
@@ -236,49 +288,49 @@ class AI_Player(Player):
         return board
 
     def valid_move_with_board(self, from_pos, to_pos, roll_values, board):
-        """
-        Validates a move on the given board, considering the die values.
+        # Convert roll_values to integers if necessary
+        roll_values = [int(value) for value in roll_values]
 
-        :param from_pos: The starting position of the piece.
-        :param to_pos: The target position of the piece.
-        :param roll_values: A list of die values (e.g., [3, 5]).
-        :param board: The current board state.
-        :return: True if the move is valid, False otherwise.
-        """
-        # If the player has captured pieces, they must move them first
-        if self.captured_piece_on_board(board) and from_pos != self.get_captured_position():
-            return False  # Must move captured pieces first
+        if not isinstance(roll_values, list):
+            print(f"Error: Expected roll_values to be a list, got {type(roll_values)}")
+            return False
 
-        # Determine move distance
+        # Check if the move is from the bar and there are captured pieces
         if from_pos == self.get_captured_position():
-            # Re-entering from the bar
-            move_distance = self.calculate_reentry_move_distance(to_pos)
-        elif to_pos == self.get_escaped_position():
-            # Bearing off
-            move_distance = self.calculate_bearing_off_distance(from_pos)
+            if board[self.get_captured_position()] <= 0:
+                return False  # No pieces to move from the bar
+            move_distance = None
+            for die_value in roll_values:
+                expected_to_pos = die_value - 1 if self.color == "white" else 24 - die_value
+                if expected_to_pos == to_pos:
+                    move_distance = die_value
+                    break
+            if move_distance is None:
+                return False
         else:
             # Regular move
-            move_distance = abs(to_pos - from_pos)
-            if self.color == 'black':
-                move_distance = abs(from_pos - to_pos)  # Adjust for black's direction
-
-        # Check if the move distance matches any of the dice roll values
-        if move_distance in roll_values:
-            die_used = move_distance
-        elif to_pos == self.get_escaped_position():
-            # Allow bearing off with a higher die if there are no pieces behind
-            higher_die_values = [die for die in roll_values if die > move_distance]
-            if higher_die_values and self.can_bear_off_from_position(from_pos, board):
-                die_used = min(higher_die_values)  # Use the smallest higher die
+            if self.color == 'white':
+                move_distance = to_pos - from_pos
             else:
-                return False  # Cannot bear off with a die not matching move distance
-        else:
-            return False  # Move distance does not match any die roll
+                move_distance = from_pos - to_pos
+
+            if move_distance <= 0:
+                return False
+
+            if move_distance not in roll_values:
+                # Check for bearing off with higher die
+                if to_pos == self.get_escaped_position():
+                    if not self.can_bear_off_from_position(from_pos, board):
+                        return False
+                    if not any(die >= move_distance for die in roll_values):
+                        return False
+                else:
+                    return False
 
         # Validate the move destination
         if from_pos == self.get_captured_position():
             # Re-entering from the bar
-            if not self.can_enter_from_bar(to_pos, board):
+            if self.is_blocked_on_board(to_pos, board):
                 return False  # Cannot enter if the point is blocked
         elif to_pos == self.get_escaped_position():
             # Bearing off
@@ -295,64 +347,52 @@ class AI_Player(Player):
         return True
 
     def can_bear_off_from_position(self, position, board):
-        home_range = range(18, 24) if self.color == "white" else range(0, 6)
-        if self.color == 'white':
-            for i in home_range:
-                if self.is_piece_at_position_on_board(i, self.color, board) and i < position:
+        # Ensure there are no pieces on higher points
+        if self.color == "white":
+            for pos in range(18, position):
+                if board[pos] > 0:
                     return False
         else:
-            for i in home_range:
-                if self.is_piece_at_position_on_board(i, self.color, board) and i > position:
+            for pos in range(5, position, -1):
+                if board[pos] < 0:
                     return False
         return True
-
-    def calculate_reentry_move_distance(self, to_pos):
-        if self.color == 'white':
-            return to_pos + 1  # Positions 0-5 correspond to rolls 1-6
-        else:
-            return 24 - to_pos  # Positions 23-18 correspond to rolls 1-6
-        
-    def can_enter_from_bar(self, position, board):
-        # For white, positions 0-5 are the opponent's home board
-        # For black, positions 18-23 are the opponent's home board
-        if self.color == "white":
-            if position < 0 or position > 5:
-                return False
-        else:
-            if position < 18 or position > 23:
-                return False
-        # Check if the position is not blocked by two or more opponent's pieces
-        return not self.is_blocked_on_board(position, board)
 
     def is_blocked_on_board(self, position, board):
         if position < 0 or position > 23:
             return False
-        opponent_color = "white" if self.color == "black" else "black"
-        if opponent_color == "white":
-            return board[position] >= 2
+        opponent_piece_count = board[position]
+        if self.other.color == "white":
+            return opponent_piece_count >= 2
         else:
-            return board[position] <= -2
+            return opponent_piece_count <= -2
 
     def all_pieces_in_home_board(self, board):
-        home_range = range(18, 24) if self.color == "white" else range(0, 6)
-        for i in range(24):
-            if self.is_piece_at_position_on_board(i, self.color, board) and i not in home_range:
-                return False
+        if self.color == "white":
+            for pos in range(0, 24):
+                if board[pos] > 0 and pos < 18:
+                    return False
+        else:
+            for pos in range(0, 24):
+                if board[pos] < 0 and pos > 5:
+                    return False
         return True
 
     def is_opponent_piece_at_position_on_board(self, position, board):
-        opponent_color = "white" if self.color == "black" else "black"
-        if opponent_color == "white":
-            return board[position] > 0
+        if position < 0 or position > 23:
+            return False
+        opponent_piece_count = board[position]
+        if self.other.color == "white":
+            return opponent_piece_count > 0
         else:
-            return board[position] < 0
+            return opponent_piece_count < 0
 
     def capture_opponent_piece(self, board, position):
-        opponent_captured_pos = self.other.get_captured_position()
-        # Remove opponent's piece from the board
+        # Remove the opponent's piece from the board
         self.other.remove_piece_from_board(board, position)
-        # Add opponent's piece to their captured position
-        self.other.add_piece_to_board(board, opponent_captured_pos)
+        # Place it on the bar (captured pieces)
+        captured_position = self.other.get_captured_position()
+        board[captured_position] += 1
 
     def add_piece_to_board(self, board, position):
         if position >= 0 and position <= 23:
@@ -361,7 +401,8 @@ class AI_Player(Player):
             else:
                 board[position] -= 1
         else:
-            board[position] += 1  # Positions 24-27
+            # Bearing off or captured pieces
+            board[position] += 1  # Always increment by 1
 
     def remove_piece_from_board(self, board, position):
         if position >= 0 and position <= 23:
@@ -370,11 +411,11 @@ class AI_Player(Player):
             else:
                 board[position] += 1
         else:
-            board[position] -= 1  # Positions 24-27
+            # Bearing off or captured pieces
+            board[position] -= 1  # Always decrement by 1
 
     def captured_piece_on_board(self, board):
-        captured_position = self.get_captured_position()
-        return board[captured_position] > 0
+        return board[self.get_captured_position()] > 0
 
     def is_piece_at_position_on_board(self, position, color, board):
         if color == "white":
@@ -383,6 +424,8 @@ class AI_Player(Player):
             return board[position] < 0
 
     def win_on_board(self, board):
-        # Check if the player has all 15 pieces borne off (position 26 or 27)
+        # Check if the player has all 15 pieces borne off (escaped position)
         escaped_position = self.get_escaped_position()
         return abs(board[escaped_position]) == 15
+
+    # Rest of the methods from AI_Player as needed
