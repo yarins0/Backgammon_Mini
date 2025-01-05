@@ -229,11 +229,11 @@ def calculate_pip_count(board, is_white):
     
     # Include pieces on the bar
     captured_position = 24 if is_white else 25
-    count_captured = abs(board[captured_position])
-    if count_captured > 0:
-        # Each captured piece is considered to be 25 pips away from bearing off
-        total_pips += count_captured * 25
-    
+    count_captured = board[captured_position]
+    # Each captured piece is considered to be 25 pips away from bearing off
+    total_pips += count_captured * 25
+
+
     return total_pips
 
 def count_home_board_points(board, is_white):

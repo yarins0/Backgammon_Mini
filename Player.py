@@ -65,13 +65,6 @@ class Player:
         # Update the board
         self.update_board(from_pos, to_pos)
 
-        # Update the board tree if using evaluation method 2
-        if CHOSEN_EVAL_METHOD == 2:
-            if not self.is_human:
-                self.update_board_tree([from_pos, to_pos])
-            if self.other and not self.other.is_human:
-                self.other.update_board_tree([from_pos, to_pos])
-
         # Optionally return the used die value
         return used_die_value
 
@@ -181,7 +174,10 @@ class Player:
         else:
             self.board[position] -= 1  # Always decrement by 1
 
-    def remove_piece_from_board(self, board, position):
+    def remove_piece_from_board(self, board, position, color = None):
+        if color is None:
+            color = self.color
+
         if position >= 0 and position <= 23:
             if self.color == "white":
                 board[position] -= 1
@@ -236,9 +232,7 @@ class Player:
             expected_to_pos = from_pos - die_value
 
         # Adjust for bearing off
-        if self.color == 'white' and expected_to_pos >= 24:
-            expected_to_pos = self.get_escaped_position()
-        elif self.color == 'black' and expected_to_pos < 0:
+        if (self.color == 'white' and expected_to_pos >= 24) or (self.color == 'black' and expected_to_pos < 0):
             expected_to_pos = self.get_escaped_position()
 
         if expected_to_pos == to_pos:
@@ -246,40 +240,59 @@ class Player:
         else:
             return None
 
-    def calculate_target_position(self, from_pos, distance):
-        if self.color == "white":
+    def calculate_target_position(self, from_pos, distance, color = None):
+        if color is None:
+            color = self.color
+
+        if color == "white":
             target = from_pos + distance
             if target >= 24:
-                target = self.get_escaped_position()
+                target = self.get_escaped_position(color)
+            if from_pos == self.get_captured_position(color):
+                target = distance - 1
         else:
             target = from_pos - distance
             if target < 0:
-                target = self.get_escaped_position()
+                target = self.get_escaped_position(color)
+            if from_pos == self.get_captured_position(color):
+                target = 24 - distance
         return target
 
-    def calculate_target_distance(self, from_pos, to_pos):
+    def calculate_target_distance(self, from_pos, to_pos, color = None):
+        if color is None:
+            color = self.color
+            
         if self.color == "white":
             distance = to_pos - from_pos
-            if to_pos == self.get_escaped_position():
+            if to_pos == self.get_escaped_position(color):
                 distance = 23 - from_pos + 1
+            if from_pos == self.get_captured_position(color):
+                distance = to_pos + 1
         else:
             distance = from_pos - to_pos
-            if to_pos == self.get_escaped_position():
+            if to_pos == self.get_escaped_position(color):
                 distance = from_pos + 1
+            if from_pos == self.get_captured_position(color):
+                distance = 24 - to_pos
         return distance
     
     def is_bearing_off_position(self, position):
-        result = position == self.get_escaped_position()
-        return result
+        return position == self.get_escaped_position()
+    
+    def get_captured_position(self, color=None):
+        """
+        Return the captured (bar) position for the given color.
+        If color is not provided, defaults to self.color.
+        """
+        if color is None:
+            color = self.color
+        return 24 if color == "white" else 25
 
-    def get_captured_position(self):
-        position = 24 if self.color == "white" else 25
-        return position
-
-    def get_escaped_position(self):
-        position = 26 if self.color == "white" else 27
-        return position
-
-    def update_board_tree(self, move):
-        # Implement the board tree update logic here
-        pass
+    def get_escaped_position(self, color=None):
+        """
+        Return the escaped (borne off) position for the given color.
+        If color is not provided, defaults to self.color.
+        """
+        if color is None:
+            color = self.color
+        return 26 if color == "white" else 27
