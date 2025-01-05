@@ -1,6 +1,7 @@
 from tkinter import *
 from Player import Player
 from AI_Player import AI_Player
+from AI_Player2 import AI_Player as AI_Player2
 from Human_Player import Human_Player
 from game_logic import roll
 from BoardTree import BoardTree
