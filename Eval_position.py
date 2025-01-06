@@ -1,44 +1,69 @@
 
-from Constants import *
+from Constants import EVAL_DISTRIBUTION
+
 
 def evaluate_position(board, ratios=EVAL_DISTRIBUTION):
     """
     Evaluates the current board position for the white player using specified ratios.
+    As the result approaches 1, White is winning; as it approaches 0, Black is winning.
     
     :param board: The current board state.
-    :param ratios: A dictionary containing the evaluation ratios.
-    :return: The evaluated score of the board.
+    :param ratios: A dictionary containing the evaluation ratios. The sum of the values should be 1.
+    :return: The evaluated score of the board, clamped to [0, 1].
     """
     
-    # Validate the ratios dictionary
-    if len(ratios) != 6:
+    # Validate ratios
+    if len(ratios) != len(EVAL_DISTRIBUTION):
         raise ValueError("Ratios dictionary must contain exactly 6 elements.")
     if not abs(sum(ratios.values()) - 1.0) < 1e-6:
         raise ValueError("The sum of the ratios must be 1.")
     
-    prime_structure = evaluate_prime_structure(board)
-    anchors = evaluate_anchors(board)
-    blots = evaluate_blots(board, consider_dice_probabilities=True)
-    race_advantage = evaluate_race_advantage(board)
-    home_board_strength = evaluate_home_board_strength(board)
-    captured_pieces = evaluate_captured_pieces(board)
     
-    # Check if all pieces have passed each other
+    prime_structure = evaluate_prime_structure(board) if ratios.get("prime_structure") > 0 else 0
+    anchors = evaluate_anchors(board) if ratios.get("anchors") > 0 else 0 
+    blots = evaluate_blots(board, consider_dice_probabilities=True) if ratios.get("blots") > 0 else 0
+    race_advantage = evaluate_race_advantage(board) if ratios.get("race_advantage") > 0 else 0
+    home_board_strength = evaluate_home_board_strength(board) if ratios.get("home_board_strength") > 0 else 0
+    captured_pieces = evaluate_captured_pieces(board) if ratios.get("captured_pieces") > 0 else 0
+    
+    # If all pieces have passed each other, you might still factor in a small portion of other scores:
     if all_pieces_have_passed_each_other(board):
-        return race_advantage
+        race_weight = 0.8  # Example: 80% from race
+        other_weight = 1.0 - race_weight
+        
+        # Combine other essential factors in a reduced way
+        other_factors = (prime_structure * ratios.get("prime_structure") +
+                         blots * ratios.get("blots") +
+                         captured_pieces * ratios.get("captured_pieces"))
+        
+        score = race_advantage * race_weight + other_factors * other_weight
+    else:
+        score = (prime_structure * ratios.get("prime_structure") +
+                 anchors * ratios.get("anchors") +
+                 blots * ratios.get("blots") +
+                 race_advantage * ratios.get("race_advantage") +
+                 home_board_strength * ratios.get("home_board_strength") +
+                 captured_pieces * ratios.get("captured_pieces"))
     
-    # Add a winning condition bonus
-    winning_bonus = 0
-    if all_pieces_in_home(board, is_white=True):
-        winning_bonus = 1.0  # Adjust this value to heavily reward winning positions
+    # Winning bonus for White, scaled by the fraction of White checkers in home
+    white_in_home_count = sum(board[pos] for pos in range(18, 24) if board[pos] > 0)
+    total_white_checkers = sum(x for x in board if x > 0)
+    if total_white_checkers > 0:
+        white_in_home_ratio = white_in_home_count / float(total_white_checkers)
+    else:
+        white_in_home_ratio = 0.0
     
-    return (prime_structure * ratios.get("prime_structure") +
-            anchors * ratios.get("anchors") +
-            blots * ratios.get("blots") +
-            race_advantage * ratios.get("race_advantage") +
-            home_board_strength * ratios.get("home_board_strength") +
-            captured_pieces * ratios.get("captured_pieces") +
-            winning_bonus)
+    winning_bonus = 0.3 * white_in_home_ratio  # Example: partial bonus based on progress
+    score += winning_bonus
+    
+    # Check if Black has all pieces in home; if so, shift score closer to 0
+    if all_pieces_in_home(board, is_white=False):
+        # Example: simple shift. You could also scale more dynamically based on how many checkers black has in home.
+        score *= 0.2
+    
+    # Clamp the final score to stay in [0, 1]
+    score = max(0.0, min(1.0, score))
+    return score
 
 def all_pieces_have_passed_each_other(board):
     """

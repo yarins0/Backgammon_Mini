@@ -1,7 +1,6 @@
 from tkinter import *
 from Player import Player
 from AI_Player import AI_Player
-from AI_Player2 import AI_Player as AI_Player2
 from Human_Player import Human_Player
 from game_logic import roll
 from BoardTree import BoardTree
@@ -73,13 +72,15 @@ class BackgammonGameGUI:
             print("Scores:", self.scores)
             winner_idx = self.scores.index(max(self.scores))
             winner_player = self.players[winner_idx]
-            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
+            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins Winner's player type: {winner_player}")
+            print(f"Winner's player type: {winner_player}")
             # Print the winner's ratios
-            if isinstance(winner_player, list) and len(winner_player) == 3 and winner_player[0] == self.AI:
+            if winner_player[0] == self.AI:
                 best_ratio = winner_player[1]
                 print(f"The best ratio is: {best_ratio}")
             else:
                 print("Winner is a human player.")
+
             self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
             
     def start_game(self):
@@ -412,14 +413,7 @@ class BackgammonGameGUI:
             self.scores[player_idx] += 1
 
             # Schedule the next game after a delay or end the session
-            if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
-                self.window.after(2000, self.start_next_game)
-            else:
-                print("All games completed.")
-                print("Scores:", self.scores)
-                winner_idx = self.scores.index(max(self.scores))
-                print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
-                self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
+            self.window.after(AI_DELAY, self.start_next_game())
 
             return True
         return False
@@ -463,7 +457,7 @@ class BackgammonGameGUI:
         self.title.set(f"AI ({self.current_player().color}) rolled: {rolled}")
 
         #try:
-        move_sequence = self.current_player().play(computer_roll)
+        move_sequence = self.current_player().play(self.board , computer_roll)
         if move_sequence:
             for move in move_sequence:
                 # Execute each move
@@ -471,11 +465,6 @@ class BackgammonGameGUI:
                 self.current_player().move_piece(from_pos, to_pos, computer_roll)
                 self.update_and_render_board()
                 self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
-
-        #except ValueError as e:
-            #print(e)
-        #except Exception as e:
-            #print(f"Unexpected error: {e}")
 
         print(f"Ended AI ({self.turn}) turn")
         self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
