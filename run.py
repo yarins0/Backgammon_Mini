@@ -2,21 +2,21 @@ from tkinter import Tk
 from GUI import *  # Ensure this import matches your file structure
 
 ratios1 = {
-    "prime_structure": 0.1,
-    "anchors": 0.1,
-    "blots": 0.2,
-    "race_advantage": 0.3,
-    "home_board_strength": 0.1,
-    "captured_pieces": 0.2
+    "prime_structure": 1,
+    "anchors": 0,
+    "blots": 0,
+    "race_advantage": 0,
+    "home_board_strength": 0,
+    "captured_pieces": 0
 }
 
 ratios2 = {
     "prime_structure": 0.1,
-    "anchors": 0.2,
-    "blots": 0.1,
+    "anchors": 0.1,
+    "blots": 0.2,
     "race_advantage": 0.2,
-    "home_board_strength": 0.2,
-    "captured_pieces": 0.2
+    "home_board_strength": 0.15,
+    "captured_pieces": 0.25
 }
 
 # This file is the entry point for the program. It creates the Tkinter window and the BackgammonGame instance.
@@ -32,7 +32,7 @@ window.title("Backgammon Game")
 
 # Create an instance of the BackgammonGame
 
-game = BackgammonGameGUI(window, players5)
+game = BackgammonGameGUI(window, players6)
 
 # Start the Tkinter main loop
 window.mainloop()

@@ -3,27 +3,127 @@ from BoardTree import BoardTree, BoardNode
 from Constants import *
 from Eval_position import evaluate_position
 import copy
-from itertools import permutations
 
 class AI_Player(Player):
-    def __init__(self, color: str, board, ratios=EVAL_DISTRIBUTION):
-        super().__init__(color, board, is_human=False)
+    def __init__(self, color: str, board, ratios= EVAL_DISTRIBUTION):
+        super().__init__(color, board, is_human= False)
         self.ratios = ratios
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
+
+
     def play(self, roll: list) -> list:
+        """
+        Decides which move to make based on CHOSEN_EVAL_METHOD.
+        Signature remains unchanged. 
+        board_tree.reset_tree is used instead of manual re-initialization.
+        """
+        #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
+
         if CHOSEN_EVAL_METHOD == 1:
             return self.heuristic_play(roll)
+        elif CHOSEN_EVAL_METHOD == 2:
+            # Reset the tree in preparation for MCTS
+            self.board_tree.reset_tree(
+                self.board,
+                evaluate_position(self.board, self.ratios),
+                self.color
+            )
+            # Run MCTS to pick a move
+            return self.mcts_play(roll)
         else:
-            # Update the board tree root with the current board state
-            self.board_tree.reset_tree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios), self.color)
-            # Ensure the tree is expanded to the required depth using the actual roll
-            self.gen_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
+            # Strategic (minimax) approach
+            self.board_tree.reset_tree(
+                self.board,
+                evaluate_position(self.board, self.ratios),
+                self.color
+            )
+            self.ensure_tree_depth(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
+            return self.strategic_play(roll, depth=MIN_MAX_DEPTH)
+        
+        #for turnaments in anni platform:
+        if executed_moves:
+                for move in executed_moves:
+                    # Execute each move
+                    from_pos, to_pos = move
+                    self.move_piece(from_pos, to_pos, roll)
+    
+        self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
 
-            executed_moves = self.strategic_play()
+    def mcts_play(self, roll: list) -> list:
+        """
+        Executes a move using an MCTS-based approach. 
+        Typically consists of multiple iterations of:
+          1) Selection
+          2) Expansion
+          3) Simulation
+          4) Backpropagation
+        Finally, selects the best child of the root.
+        """
+        # Number of iterations; may be tuned
+        MCTS_ITERATIONS = 128
 
-        return executed_moves
+        for _ in range(MCTS_ITERATIONS):
+            self.mcts_iteration(self.board_tree.root, roll)
+
+        # Pick the best move from children of root, e.g., highest evaluation
+        best_move = None
+        best_score = float('-inf') if self.color == "white" else float('inf')
+        for child in self.board_tree.root.children:
+            node_score = child.evaluation
+            if (self.color == "white" and node_score > best_score) or \
+               (self.color == "black" and node_score < best_score):
+                best_score = node_score
+                best_move = child.path
+
+        if best_move:
+            print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            return best_move
+        else:
+            print("No valid moves found by MCTS.")
+            return []
+
+    def mcts_iteration(self, node: BoardNode, roll: list):
+        """
+        One iteration of MCTS:
+          1) Selection
+          2) Expansion
+          3) Simulation
+          4) Backpropagation
+        """
+        selected_node = self.mcts_select(node)
+        expanded_node = self.mcts_expand(selected_node, roll)
+        simulation_result = self.mcts_simulate(expanded_node)
+        self.mcts_backpropagate(expanded_node, simulation_result)
+
+    def mcts_select(self, node: BoardNode) -> BoardNode:
+        """
+        Navigate down the tree (e.g. using UCB) until we reach a node that can be expanded
+        or is a terminal state.
+        """
+        return node  # Placeholder for your actual selection logic
+
+    def mcts_expand(self, node: BoardNode, roll: list) -> BoardNode:
+        """
+        If not terminal and there's an unexpanded move, add one child node; otherwise,
+        return node as is.
+        """
+        return node  # Placeholder for your actual expansion logic
+
+    def mcts_simulate(self, node: BoardNode) -> float:
+        """
+        Simulate a playout from the node (e.g. random or heuristic-based) until terminal,
+        and return a final value [0..1] indicating result from White’s perspective.
+        """
+        return evaluate_position(node.board, self.ratios)
+
+    def mcts_backpropagate(self, node: BoardNode, result: float):
+        """
+        Traverse back up from node to root, updating visitation counts and accumulated
+        values for each ancestor.
+        """
+        pass  # Placeholder for your actual backpropagation logic
 
     def heuristic_play(self, roll: list) -> list:
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
@@ -47,8 +147,6 @@ class AI_Player(Player):
             last_moves = child.path[-1]
             if not last_moves:
                 continue
-
-            print(f"[DEBUG] Evaluating child node with path: {last_moves} and evaluation: {child.evaluation}")
 
             if (self.color == "white" and child.evaluation > best_score) \
                or (self.color == "black" and child.evaluation < best_score):
@@ -300,8 +398,8 @@ class AI_Player(Player):
 
     def capture_opponent_piece(self, board, position, current_color):
         opp_color = "white" if current_color == "black" else "black"
-        self.other.remove_piece_from_board(board, position, opp_color)
-        board[self.other.get_captured_position(opp_color)] += 1
+        self.remove_piece_from_board(board, position, opp_color)
+        board[self.get_captured_position(opp_color)] += 1
 
     def add_piece_to_board(self, board, position, current_color):
         if 0 <= position <= 23:
@@ -336,5 +434,5 @@ class AI_Player(Player):
     def win_on_board(self, board, color=None):
         if color is None:
             color = self.color
-        escaped_position = self.get_escaped_position(color)
-        return abs(board[escaped_position]) == 15
+
+        return board[self.get_escaped_position(color)] == 15

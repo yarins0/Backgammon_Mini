@@ -4,19 +4,19 @@ from Constants import EVAL_DISTRIBUTION
 
 import random
 
+NUM_AI_PLAYERS = 30  # Adjust the number of AI players
+UNIT_RATIO = 0.05  # Ratio unit (0.05 = 1/20)
+
 def generate_random_ratios():
-    unit_ratio = 0.05
-    total_units = int(1.0/unit_ratio)    # Total units (20 * 0.05 = 1.0)
+    total_units = int(1.0/UNIT_RATIO)             # Total number of units
     num_factors = len(EVAL_DISTRIBUTION)            # Number of ratios to generate
 
     # Generate random integers that sum to total_units
     ratios = []
     remaining = total_units
     for _ in range(num_factors - 1):
-        # Ensure each ratio is at least 1 (0.05 when scaled)
-        min_value = 1
-        max_value = remaining - (num_factors - len(ratios) - 1) * min_value
-        r = random.randint(min_value, max_value)
+        # Ensure each ratio is at least 1 (UNIT_RATIO when scaled)
+        r = random.randint(0, remaining) # Generate a random integer between 0 (min_value) and remaining (max_value)
         ratios.append(r)
         remaining -= r
     ratios.append(remaining)  # Assign the remaining units to the last ratio
@@ -25,12 +25,12 @@ def generate_random_ratios():
     random.shuffle(ratios)
 
     return {
-        "prime_structure": ratios[0] * unit_ratio,
-        "anchors": ratios[1] * unit_ratio,
-        "blots": ratios[2] * unit_ratio,
-        "race_advantage": ratios[3] * unit_ratio,
-        "home_board_strength": ratios[4] * unit_ratio,
-        "captured_pieces": ratios[5] * unit_ratio
+        "prime_structure": ratios[0] * UNIT_RATIO,
+        "anchors": ratios[1] * UNIT_RATIO,
+        "blots": ratios[2] * UNIT_RATIO,
+        "race_advantage": ratios[3] * UNIT_RATIO,
+        "home_board_strength": ratios[4] * UNIT_RATIO,
+        "captured_pieces": ratios[5] * UNIT_RATIO
     }
 
 if __name__ == "__main__":
@@ -38,9 +38,8 @@ if __name__ == "__main__":
     window.title("Backgammon AI Tournament")
 
     # Generate a list of AI players with random ratios
-    players = []
-    num_ai_players = 30  # Adjust the number of AI players
-    for _ in range(num_ai_players):
+    players = ["AI"]
+    for _ in range(NUM_AI_PLAYERS):
         ratios = generate_random_ratios()
         players.append(["AI", ratios])
 
