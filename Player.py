@@ -3,12 +3,19 @@ from BoardTree import BoardTree
 from Constants import *
 
 class Player:
-    def __init__(self, color, board, is_human=False):
+
+    def __init__(self, 
+                 color, 
+                 board = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0], 
+                 is_human=False):
+        
         if color not in ["black", "white"]:
             raise ValueError("Color must be 'black' or 'white'.")
+        
         self.color = color
         self._is_human = is_human
         self.board = board
+        self.pieces , self.other_pieces = self.convert_board_to_pieces_array(self.board)
         self.board_tree = None
         self.other = None  # Will be set using set_other method
 
@@ -16,9 +23,60 @@ class Player:
     def is_human(self):
         return self._is_human
     
-    def play(self, roll):
+    def play(self, board, roll, color, time):
         pass  # Implement the logic for playing a turn
 
+    def play_random(self, board, roll, color, time):
+        self.play(board, roll, color, time)
+
+    def convert_board_to_pieces_array(self, board):
+        pieces = []  # Reset current player pieces
+        other_pieces = []  # Reset opposing player pieces
+
+        # Populate self._pieces and self.other_pieces based on board state
+        # the first 24
+        for i in range(len(board) - 4):
+            if board[i] > 0:  # White pieces
+                if self.color == "white":
+                    pieces.extend([i + 1] * board[i])
+                else:
+                    other_pieces.extend([i + 1] * board[i])
+            elif board[i] < 0:  # Black pieces
+                if self.color == "black":
+                    pieces.extend([i + 1] * abs(board[i]))
+                else:
+                    other_pieces.extend([i + 1] * abs(board[i]))
+
+        # the last 4
+        if self.color == "black":
+            pieces.extend([0] * abs(board[25]))
+            pieces.extend([25] * abs(board[27]))
+            other_pieces.extend([25] * abs(board[24]))
+            other_pieces.extend([0] * abs(board[26]))
+
+        elif self.color == "white":
+            other_pieces.extend([0] * board[25])
+            other_pieces.extend([25] * board[27])
+            pieces.extend([25] * board[24])
+            pieces.extend([0] * board[26])
+
+        pieces.sort()  # Ensure pieces are ordered
+        other_pieces.sort()
+
+        return pieces, other_pieces
+
+    def set_pieces(self, pieces):
+        self.pieces = pieces
+    
+    def set_other_pieces(self, other_pieces): 
+        self.other_pieces = other_pieces
+    
+    def get_pieces(self):
+        return self.pieces
+    
+    def get_other_pieces(self):
+        return self.other_pieces
+    
     def set_board_tree(self, board_tree):
         self.board_tree = board_tree
 
@@ -64,6 +122,9 @@ class Player:
 
         # Update the board
         self.update_board(from_pos, to_pos)
+
+        self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
+
 
         # Optionally return the used die value
         return used_die_value
@@ -200,21 +261,22 @@ class Player:
         if self.is_opponent_vulnerable_at_position(position):
             print(f"Capturing opponent piece at position {position}")
             # Remove the opponent's piece from the board
-            self.other.remove_piece(position)
+            opponent_color = "black" if self.color == "white" else "white"
+            self.remove_piece_from_board(self.board, position , opponent_color)
             # Place it on the bar (captured pieces)
-            self.board[self.other.get_captured_position()] += 1
+            self.board[self.get_captured_position(opponent_color)] += 1
 
     def is_opponent_vulnerable_at_position(self, position):
         if position < 0 or position > 23:
             return False
         opponent_piece_count = self.board[position]
-        return opponent_piece_count == 1 if self.other.color == "white" else opponent_piece_count == -1
+        return opponent_piece_count == 1 if self.color == "black" else opponent_piece_count == -1
 
     def is_blocked(self, position):
         if position < 0 or position > 23:
             return False
         opponent_piece_count = self.board[position]
-        result = opponent_piece_count >= 2 if self.other.color == "white" else opponent_piece_count <= -2
+        result = opponent_piece_count >= 2 if self.color == "black" else opponent_piece_count <= -2
         return result
 
     def all_pieces_in_home(self):
