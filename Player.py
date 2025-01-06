@@ -6,7 +6,7 @@ class Player:
 
     def __init__(self, 
                  color, 
-                 board = [], 
+                 board = START_BOARD, 
                  is_human=False):
         
         if color not in [BLACK, WHITE]:
@@ -17,7 +17,6 @@ class Player:
         self.board = board
         self.pieces , self.other_pieces = self.convert_board_to_pieces_array(self.board)
         self.board_tree = None
-        self.other = None  # Will be set using set_other method
 
     @property
     def is_human(self):
@@ -80,12 +79,15 @@ class Player:
     def set_board_tree(self, board_tree):
         self.board_tree = board_tree
 
-    def set_other(self, other):
-        self.other = other
 
     def win(self):
         # Check if the player has all 15 pieces borne off (escaped)
         return self.board[self.get_escaped_position()] == 15
+    
+    def get_next_player(self , color = None):
+        if color is None:
+            color = self.color
+        return BLACK if color == WHITE else WHITE
 
     def move_piece(self, from_pos, to_pos, rolls):
         # Ensure rolls is a list of integers
