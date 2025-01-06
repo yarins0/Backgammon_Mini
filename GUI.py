@@ -36,29 +36,12 @@ class BackgammonGameGUI:
         white_player, white_ratios = self.parse_player(self.players[j])
 
         # Initialize the game board
-        self.board = [0] * 28
-        self.setup_initial_board()
+        self.board = START_BOARD
 
         # Create player instances with the shared board
         self.black = AI_Player(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
         self.white = AI_Player(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
 
-        self.white.set_other(self.black)
-        self.black.set_other(self.white)
-
-    def setup_initial_board(self):
-        # Set up the initial board positions for a new game
-        self.board = [0] * 28
-        # White pieces
-        self.board[0] = 2
-        self.board[11] = 5
-        self.board[16] = 3
-        self.board[18] = 5
-        # Black pieces (negative numbers)
-        self.board[23] = -2
-        self.board[12] = -5
-        self.board[7] = -3
-        self.board[5] = -5
 
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
@@ -72,8 +55,7 @@ class BackgammonGameGUI:
             print("Scores:", self.scores)
             winner_idx = self.scores.index(max(self.scores))
             winner_player = self.players[winner_idx]
-            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins Winner's player type: {winner_player}")
-            print(f"Winner's player type: {winner_player}")
+            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
             # Print the winner's ratios
             if winner_player[0] == self.AI:
                 best_ratio = winner_player[1]
