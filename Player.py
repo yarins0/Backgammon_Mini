@@ -6,7 +6,7 @@ class Player:
 
     def __init__(self, 
                  color, 
-                 board = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0], 
+                 board = [], 
                  is_human=False):
         
         if color not in ["black", "white"]:
@@ -23,7 +23,7 @@ class Player:
     def is_human(self):
         return self._is_human
     
-    def play(self, board, roll, color, time):
+    def play(self, board, roll, color = None, time = 0):
         pass  # Implement the logic for playing a turn
 
     def play_random(self, board, roll, color, time):
@@ -87,10 +87,6 @@ class Player:
         # Check if the player has all 15 pieces borne off (escaped)
         return self.board[self.get_escaped_position()] == 15
 
-    def lose(self):
-        # Return True if the opponent has no pieces left on the board
-        return self.board[self.other.get_escaped_position()] == 15
-
     def move_piece(self, from_pos, to_pos, rolls):
         # Ensure rolls is a list of integers
         rolls = [int(value) for value in rolls]
@@ -123,9 +119,7 @@ class Player:
         # Update the board
         self.update_board(from_pos, to_pos)
 
-        self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
-
-
+        #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
         # Optionally return the used die value
         return used_die_value
 
