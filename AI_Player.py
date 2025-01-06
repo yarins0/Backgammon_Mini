@@ -11,15 +11,16 @@ class AI_Player(Player):
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
-
-
-    def play(self, roll: list) -> list:
+    def play(self, board:list ,roll: list, current_color=None, time = 0) -> list:
         """
         Decides which move to make based on CHOSEN_EVAL_METHOD.
         Signature remains unchanged. 
         board_tree.reset_tree is used instead of manual re-initialization.
         """
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
+        self.board = board
+        if current_color is None:
+            current_color = self.color
 
         if CHOSEN_EVAL_METHOD == 1:
             return self.heuristic_play(roll)
@@ -35,21 +36,21 @@ class AI_Player(Player):
         else:
             # Strategic (minimax) approach
             self.board_tree.reset_tree(
-                self.board,
+                copy.deepcopy(self.board),
                 evaluate_position(self.board, self.ratios),
                 self.color
             )
-            self.ensure_tree_depth(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
-            return self.strategic_play(roll, depth=MIN_MAX_DEPTH)
+            self.gen_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
+            return self.strategic_play()
         
         #for turnaments in anni platform:
-        if executed_moves:
-                for move in executed_moves:
-                    # Execute each move
-                    from_pos, to_pos = move
-                    self.move_piece(from_pos, to_pos, roll)
+        #if executed_moves:
+        #       for move in executed_moves:
+        #          # Execute each move
+        #         from_pos, to_pos = move
+        #        self.move_piece(from_pos, to_pos, roll)
     
-        self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
+        #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
 
     def mcts_play(self, roll: list) -> list:
         """
@@ -164,6 +165,7 @@ class AI_Player(Player):
         if depth == 0:
             node.evaluation = evaluate_position(node.board, self.ratios)
             return node.evaluation
+        
 
         if current_roll is not None:
             rolls_to_use = [current_roll]
@@ -189,10 +191,10 @@ class AI_Player(Player):
                     self.simulate_moves(child_board, moves, current_color=node.player_turn)
 
                     child_node = BoardNode(
-                        board=child_board,
-                        evaluation=0.0,
-                        path=node.path + [moves],
-                        player_turn=next_player_turn
+                        board= child_board,
+                        evaluation= 0.0,
+                        path= node.path + [moves],
+                        player_turn= next_player_turn
                     )
                     node.add_child(child_node)
 

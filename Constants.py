@@ -1,5 +1,9 @@
 MIN_MAX_DEPTH = 1  # Default depth for min-max search
-CHOSEN_EVAL_METHOD = 2 # Choose 1 for heuristic, 2 for strategic (min max)
+CHOSEN_EVAL_METHOD = 3 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max)
+
+WHITE = "white"
+BLACK = "black"
+
 
 CONSIDER_DICE_PROBABILITIES = False
 EVAL_DISTRIBUTION = {
