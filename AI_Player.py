@@ -1,3 +1,4 @@
+import time
 from Player import Player
 from BoardTree import BoardTree, BoardNode
 from Constants import *
@@ -5,13 +6,13 @@ from Eval_position import evaluate_position
 import copy
 
 class AI_Player(Player):
-    def __init__(self, color: str, board, ratios= EVAL_DISTRIBUTION):
+    def __init__(self, color: str, board= START_BOARD, ratios= EVAL_DISTRIBUTION):
         super().__init__(color, board, is_human= False)
         self.ratios = ratios
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
-    def play(self, board:list ,roll: list, current_color=None, time = 0) -> list:
+    def play(self, board:list ,roll: list, current_color=None, time = AI_TURN_TIME) -> list:
         """
         Decides which move to make based on CHOSEN_EVAL_METHOD.
         Signature remains unchanged. 
@@ -32,7 +33,7 @@ class AI_Player(Player):
                 self.color
             )
             # Run MCTS to pick a move
-            return self.mcts_play(roll)
+            return self.mcts_play(roll, time)
         else:
             # Strategic (minimax) approach
             self.board_tree.reset_tree(
@@ -52,7 +53,7 @@ class AI_Player(Player):
     
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
 
-    def mcts_play(self, roll: list) -> list:
+    def mcts_play(self, roll: list, time = AI_TURN_TIME) -> list:
         """
         Executes a move using an MCTS-based approach. 
         Typically consists of multiple iterations of:
@@ -62,55 +63,142 @@ class AI_Player(Player):
           4) Backpropagation
         Finally, selects the best child of the root.
         """
-        # Number of iterations; may be tuned
-        MCTS_ITERATIONS = 128
-
-        for _ in range(MCTS_ITERATIONS):
-            self.mcts_iteration(self.board_tree.root, roll)
-
+        
         # Pick the best move from children of root, e.g., highest evaluation
-        best_move = None
-        best_score = float('-inf') if self.color == WHITE else float('inf')
-        for child in self.board_tree.root.children:
-            node_score = child.evaluation
-            if (self.color == WHITE and node_score > best_score) or \
-               (self.color == BLACK and node_score < best_score):
-                best_score = node_score
-                best_move = child.path
+        best_child = self.UCT_search(self.board_tree.root, roll, time)  
+
+        if best_child:
+            best_move = best_child.get_last_move()          
 
         if best_move:
-            print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_child.wins}")
             return best_move
-        else:
-            print("No valid moves found by MCTS.")
-            return []
+        else: 
+            return self.heuristic_play(roll) # If no valid moves found, return best heuristic move
+            
 
-    def mcts_iteration(self, node: BoardNode, roll: list):
+    def UCT_search(self, node: BoardNode, roll: list, time_lim = AI_TURN_TIME):
+        """ 
+        Repeatedly run MCTS iterations until we run out of time, keeping track of the best move found.
+        :param root_node: The initial MCTS node to search from.
+        :param roll: The dice roll (if your logic needs it).
+        :param time_limit_seconds: How long (in seconds) to run the search.
+        :return: The best move found, or None if no move could be found.
         """
-        One iteration of MCTS:
-          1) Selection
-          2) Expansion
-          3) Simulation
-          4) Backpropagation
-        """
-        selected_node = self.mcts_select(node)
-        expanded_node = self.mcts_expand(selected_node, roll)
-        simulation_result = self.mcts_simulate(expanded_node)
-        self.mcts_backpropagate(expanded_node, simulation_result)
 
-    def mcts_select(self, node: BoardNode) -> BoardNode:
+        end_time = time.time() + time_lim
+        best_score = float('-inf')
+        best_node = None
+
+        while time.time() < end_time:
+            nodeL = self.mcts_select(node, roll)
+            if nodeL is not None:
+                simulation_result = self.mcts_simulate(nodeL)
+                self.mcts_backpropagate(nodeL, simulation_result)
+                if nodeL.wins > best_score:
+                    best_score = nodeL.wins
+                    best_node = nodeL
+
+        best_ucb_child = node.get_best_ucb_child()
+        return best_node if best_ucb_child is None else best_ucb_child
+
+    def mcts_select(self, node: BoardNode, roll: list = None)-> BoardNode:
         """
         Navigate down the tree (e.g. using UCB) until we reach a node that can be expanded
         or is a terminal state.
         """
-        return node  # Placeholder for your actual selection logic
+        current_node = node
+        
+        # Keep selecting moves while the node is valid and not a terminal state
+        while current_node is not None and not current_node.is_terminal():
+            
+            # If the node is not fully expanded, we try to expand
+            if not current_node.is_fully_expanded(roll):
+                if roll is None:
+                    roll = self.get_possible_rolls()
+                    child_node = self.mcts_expand(current_node, roll)
+                else:
+                    child_node = self.mcts_expand_all_moves(current_node, roll)
+                roll = None
+                
+                # If expand() returns None, it means no new child could be created
+                # (often due to no legal moves). Stop selection.
+                if child_node is None:
+                    break
+                
+                # Return the new child immediately after expansion
+                return child_node
+            
+            # Otherwise, if the node is fully expanded, we pick a child to explore
+            else:
+                next_node = current_node.get_best_ucb_child(MCTS_C, 1 if current_node.player_turn == self.color else -1)
+                
+                # If we can't pick a valid child, stop
+                if next_node is None:
+                    break
+                
+                current_node = next_node
 
-    def mcts_expand(self, node: BoardNode, roll: list) -> BoardNode:
+        # Once the loop is done, return whatever node we ended on
+        return current_node
+    
+    def mcts_expand_all_moves(self, node, roll):
+        """
+        Generate and add all possible child nodes for the current state.
+        """
+        if node.is_fully_expanded(roll):
+            return node
+        
+        all_moves = self.generate_all_moves(node.board, roll, current_color=node.player_turn)
+        if not all_moves:
+            return node # No valid moves available
+
+        for move in all_moves:
+            new_board = self.simulate_moves(copy.deepcopy(node.board), move, current_color=node.player_turn)
+            new_node = BoardNode(
+                new_board,
+                0.0,
+                node.path + [move],
+                self.get_next_player(node.player_turn)
+            )
+            node.add_child(new_node)
+                
+        
+        # Mark this node as fully expanded now that we added all moves.
+        node.fully_expand_roll(roll)
+                
+    def mcts_expand(self, node: BoardNode, roll: list, ) -> BoardNode:
         """
         If not terminal and there's an unexpanded move, add one child node; otherwise,
         return node as is.
         """
-        return node  # Placeholder for your actual expansion logic
+        if node.is_fully_expanded(roll):
+            return node
+        
+        all_moves = self.generate_all_moves(node.board, roll, current_color=node.player_turn)
+        if not all_moves:
+            return node # No valid moves available
+        
+        #get the last moves of the children
+        last_moves = []
+        for child in node.children:
+            last_moves.append(child.get_last_move())
+
+        if last_moves is not None:
+            for move in all_moves:
+                if move not in last_moves:
+                    new_board = self.simulate_moves(copy.deepcopy(node.board), move, current_color=node.player_turn)
+                    new_node = BoardNode(
+                        new_board,
+                        0.0,
+                        node.path + [move],
+                        self.get_next_player(node.player_turn)
+                    )
+                    node.add_child(new_node)
+                    return new_node
+                
+        # Mark this node as fully expanded now that we added all moves.
+        node.fully_expand_roll(roll)
 
     def mcts_simulate(self, node: BoardNode) -> float:
         """
@@ -124,11 +212,20 @@ class AI_Player(Player):
         Traverse back up from node to root, updating visitation counts and accumulated
         values for each ancestor.
         """
-        pass  # Placeholder for your actual backpropagation logic
+        while node is not None:
+            node.visits += 1
+            node.wins += result
+            node = node.parent
 
+    def random_play(self, roll: list) -> list:
+        all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
+        if all_moves:
+            return all_moves[0]
+        else:
+            return []
     def heuristic_play(self, roll: list) -> list:
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
-        best_move, best_score = self.evaluate_moves(all_moves)
+        best_move, best_score = self.choose_best_move(all_moves)
 
         if best_move:
             print(f"AI ({self.color}) executed moves: {best_move} with score: {best_score}")
@@ -136,26 +233,15 @@ class AI_Player(Player):
         else:
             print("No valid moves available for AI.")
             return []
-
     def strategic_play(self) -> list:
-        best_score = float('-inf') if self.color == WHITE else float('inf')
-        best_move = None
-
         current_node = self.board_tree.root
-        for child in current_node.children:
-            if not child.path:
-                continue
-            last_moves = child.path[-1]
-            if not last_moves:
-                continue
+        best_child = current_node.get_best_evaluation_child()
 
-            if (self.color == WHITE and child.evaluation > best_score) \
-               or (self.color == BLACK and child.evaluation < best_score):
-                best_score = child.evaluation
-                best_move = last_moves
+        if best_child:
+            best_move = best_child.get_last_move()
 
         if best_move:
-            print(f"Strategic AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            print(f"Strategic AI ({self.color}) executed moves: {best_move} with score: {best_child.get_evaluation()}")
             return best_move
         else:
             print("No valid moves available for Strategic AI.")
@@ -172,7 +258,7 @@ class AI_Player(Player):
         else:
             rolls_to_use = self.get_possible_rolls()
 
-        next_player_turn = BLACK if node.player_turn == WHITE else WHITE
+        next_player_turn = self.get_next_player(node.player_turn)
 
         for roll in rolls_to_use:
             all_moves = self.generate_all_moves(node.board, roll, current_color=node.player_turn)
@@ -211,14 +297,14 @@ class AI_Player(Player):
         """
         rolls = set()
         for i in range(1, 7):
-            for j in range(1, 7):
+            for j in range(i, 7):
                 if i == j:
                     rolls.add((i, i, i, i))  # Doubles are played four times
                 else:
                     rolls.add((i, j))
         return list(rolls)
 
-    def evaluate_moves(self, all_moves):
+    def choose_best_move(self, all_moves):
         best_score = float('-inf') if self.color == WHITE else float('inf')
         best_move = None
 
@@ -432,7 +518,6 @@ class AI_Player(Player):
             return board[position] > 0
         else:
             return board[position] > 0 if color == WHITE else board[position] < 0
-
     def win_on_board(self, board, color=None):
         if color is None:
             color = self.color
