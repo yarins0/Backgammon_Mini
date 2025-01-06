@@ -70,11 +70,11 @@ class AI_Player(Player):
 
         # Pick the best move from children of root, e.g., highest evaluation
         best_move = None
-        best_score = float('-inf') if self.color == "white" else float('inf')
+        best_score = float('-inf') if self.color == WHITE else float('inf')
         for child in self.board_tree.root.children:
             node_score = child.evaluation
-            if (self.color == "white" and node_score > best_score) or \
-               (self.color == "black" and node_score < best_score):
+            if (self.color == WHITE and node_score > best_score) or \
+               (self.color == BLACK and node_score < best_score):
                 best_score = node_score
                 best_move = child.path
 
@@ -138,7 +138,7 @@ class AI_Player(Player):
             return []
 
     def strategic_play(self) -> list:
-        best_score = float('-inf') if self.color == "white" else float('inf')
+        best_score = float('-inf') if self.color == WHITE else float('inf')
         best_move = None
 
         current_node = self.board_tree.root
@@ -149,8 +149,8 @@ class AI_Player(Player):
             if not last_moves:
                 continue
 
-            if (self.color == "white" and child.evaluation > best_score) \
-               or (self.color == "black" and child.evaluation < best_score):
+            if (self.color == WHITE and child.evaluation > best_score) \
+               or (self.color == BLACK and child.evaluation < best_score):
                 best_score = child.evaluation
                 best_move = last_moves
 
@@ -172,7 +172,7 @@ class AI_Player(Player):
         else:
             rolls_to_use = self.get_possible_rolls()
 
-        next_player_turn = "black" if node.player_turn == "white" else "white"
+        next_player_turn = BLACK if node.player_turn == WHITE else WHITE
 
         for roll in rolls_to_use:
             all_moves = self.generate_all_moves(node.board, roll, current_color=node.player_turn)
@@ -219,13 +219,13 @@ class AI_Player(Player):
         return list(rolls)
 
     def evaluate_moves(self, all_moves):
-        best_score = float('-inf') if self.color == "white" else float('inf')
+        best_score = float('-inf') if self.color == WHITE else float('inf')
         best_move = None
 
         for moves in all_moves:
             new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
             score = evaluate_position(new_board, self.ratios)
-            if (self.color == "white" and score > best_score) or (self.color == "black" and score < best_score):
+            if (self.color == WHITE and score > best_score) or (self.color == BLACK and score < best_score):
                 best_score = score
                 best_move = moves
 
@@ -330,7 +330,7 @@ class AI_Player(Player):
         if from_pos == self.get_captured_position(current_color):
             move_distance = None
             for die_value in roll_values:
-                expected_to_pos = die_value - 1 if current_color == "white" else 24 - die_value
+                expected_to_pos = die_value - 1 if current_color == WHITE else 24 - die_value
                 if expected_to_pos == to_pos:
                     move_distance = die_value
                     break
@@ -342,13 +342,13 @@ class AI_Player(Player):
                 return False
             if not self.can_bear_off_from_position(from_pos, board, current_color):
                 return False
-            if not any(die >= from_pos + 1 for die in roll_values) and current_color == "black":
+            if not any(die >= from_pos + 1 for die in roll_values) and current_color == BLACK:
                 return False
-            if not any(die >= 24 - from_pos for die in roll_values) and current_color == "white":
+            if not any(die >= 24 - from_pos for die in roll_values) and current_color == WHITE:
                 return False
             
         else:
-            move_distance = to_pos - from_pos if current_color == "white" else from_pos - to_pos
+            move_distance = to_pos - from_pos if current_color == WHITE else from_pos - to_pos
 
             if move_distance <= 0:
                 return False
@@ -356,7 +356,7 @@ class AI_Player(Player):
         return True
 
     def can_bear_off_from_position(self, position, board, current_color):
-        if current_color == "white":
+        if current_color == WHITE:
             for pos in range(18, position):
                 if board[pos] > 0:
                     return False
@@ -371,14 +371,14 @@ class AI_Player(Player):
             return False
         occupant_count = board[position]
         # Determine the opponent color
-        opp_color = "white" if current_color == "black" else "black"
-        if opp_color == "white":
+        opp_color = WHITE if current_color == BLACK else BLACK
+        if opp_color == WHITE:
             return occupant_count >= 2
         else:
             return occupant_count <= -2
 
     def all_pieces_in_home_board(self, board, current_color):
-        if current_color == "white":
+        if current_color == WHITE:
             for pos in range(24):
                 if board[pos] > 0 and pos < 18:
                     return False
@@ -392,20 +392,20 @@ class AI_Player(Player):
         if position < 0 or position > 23:
             return False
         occupant_count = board[position]
-        opp_color = "white" if current_color == "black" else "black"
-        if opp_color == "white":
+        opp_color = WHITE if current_color == BLACK else BLACK
+        if opp_color == WHITE:
             return occupant_count > 0
         else:
             return occupant_count < 0
 
     def capture_opponent_piece(self, board, position, current_color):
-        opp_color = "white" if current_color == "black" else "black"
+        opp_color = WHITE if current_color == BLACK else BLACK
         self.remove_piece_from_board(board, position, opp_color)
         board[self.get_captured_position(opp_color)] += 1
 
     def add_piece_to_board(self, board, position, current_color):
         if 0 <= position <= 23:
-            if current_color == "white":
+            if current_color == WHITE:
                 board[position] += 1
             else:
                 board[position] -= 1
@@ -414,7 +414,7 @@ class AI_Player(Player):
 
     def remove_piece_from_board(self, board, position, current_color):
         if 0 <= position <= 23:
-            if current_color == "white":
+            if current_color == WHITE:
                 board[position] -= 1
             else:
                 board[position] += 1
@@ -431,7 +431,7 @@ class AI_Player(Player):
         if position < 0 or position > 23:
             return board[position] > 0
         else:
-            return board[position] > 0 if color == "white" else board[position] < 0
+            return board[position] > 0 if color == WHITE else board[position] < 0
 
     def win_on_board(self, board, color=None):
         if color is None:

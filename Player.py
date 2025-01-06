@@ -9,7 +9,7 @@ class Player:
                  board = [], 
                  is_human=False):
         
-        if color not in ["black", "white"]:
+        if color not in [BLACK, WHITE]:
             raise ValueError("Color must be 'black' or 'white'.")
         
         self.color = color
@@ -37,24 +37,24 @@ class Player:
         # the first 24
         for i in range(len(board) - 4):
             if board[i] > 0:  # White pieces
-                if self.color == "white":
+                if self.color == WHITE:
                     pieces.extend([i + 1] * board[i])
                 else:
                     other_pieces.extend([i + 1] * board[i])
             elif board[i] < 0:  # Black pieces
-                if self.color == "black":
+                if self.color == BLACK:
                     pieces.extend([i + 1] * abs(board[i]))
                 else:
                     other_pieces.extend([i + 1] * abs(board[i]))
 
         # the last 4
-        if self.color == "black":
+        if self.color == BLACK:
             pieces.extend([0] * abs(board[25]))
             pieces.extend([25] * abs(board[27]))
             other_pieces.extend([25] * abs(board[24]))
             other_pieces.extend([0] * abs(board[26]))
 
-        elif self.color == "white":
+        elif self.color == WHITE:
             other_pieces.extend([0] * board[25])
             other_pieces.extend([25] * board[27])
             pieces.extend([25] * board[24])
@@ -127,7 +127,7 @@ class Player:
         # Checks if a specific die value allows moving from from_pos to to_pos
         if from_pos == self.get_captured_position():
             # Re-entering from the bar
-            expected_to_pos = die_value - 1 if self.color == "white" else 24 - die_value
+            expected_to_pos = die_value - 1 if self.color == WHITE else 24 - die_value
             return expected_to_pos == to_pos
         else:
             if self.color == 'white':
@@ -185,10 +185,10 @@ class Player:
 
     def can_bear_off(self, from_pos):
         # Ensure there are no pieces on higher points
-        home_range = range(18, 24) if self.color == "white" else range(0, 6)
+        home_range = range(18, 24) if self.color == WHITE else range(0, 6)
         for i in home_range:
             if self.is_piece_at_position(i, self.color):
-                if (self.color == "white" and i < from_pos) or (self.color == "black" and i > from_pos):
+                if (self.color == WHITE and i < from_pos) or (self.color == BLACK and i > from_pos):
                     return False
         return True
 
@@ -200,11 +200,11 @@ class Player:
 
     def is_piece_at_position(self, position, color):
         # Check if there's a piece of the player's color at the position
-        return self.board[position] > 0 if color == "white" else self.board[position] < 0
+        return self.board[position] > 0 if color == WHITE else self.board[position] < 0
 
     def add_piece(self, position):
         if position >= 0 and position <= 23:
-            if self.color == "white":
+            if self.color == WHITE:
                 self.board[position] += 1
             else:
                 self.board[position] -= 1
@@ -213,7 +213,7 @@ class Player:
 
     def add_piece_to_board(self, board, position):
         if position >= 0 and position <= 23:
-            if self.color == "white":
+            if self.color == WHITE:
                 board[position] += 1
             else:
                 board[position] -= 1
@@ -222,7 +222,7 @@ class Player:
 
     def remove_piece(self, position):
         if position >= 0 and position <= 23:
-            if self.color == "white":
+            if self.color == WHITE:
                 self.board[position] -= 1
             else:
                 self.board[position] += 1
@@ -234,7 +234,7 @@ class Player:
             color = self.color
 
         if position >= 0 and position <= 23:
-            if self.color == "white":
+            if self.color == WHITE:
                 board[position] -= 1
             else:
                 board[position] += 1
@@ -255,7 +255,7 @@ class Player:
         if self.is_opponent_vulnerable_at_position(position):
             print(f"Capturing opponent piece at position {position}")
             # Remove the opponent's piece from the board
-            opponent_color = "black" if self.color == "white" else "white"
+            opponent_color = BLACK if self.color == WHITE else WHITE
             self.remove_piece_from_board(self.board, position , opponent_color)
             # Place it on the bar (captured pieces)
             self.board[self.get_captured_position(opponent_color)] += 1
@@ -264,17 +264,17 @@ class Player:
         if position < 0 or position > 23:
             return False
         opponent_piece_count = self.board[position]
-        return opponent_piece_count == 1 if self.color == "black" else opponent_piece_count == -1
+        return opponent_piece_count == 1 if self.color == BLACK else opponent_piece_count == -1
 
     def is_blocked(self, position):
         if position < 0 or position > 23:
             return False
         opponent_piece_count = self.board[position]
-        result = opponent_piece_count >= 2 if self.color == "black" else opponent_piece_count <= -2
+        result = opponent_piece_count >= 2 if self.color == BLACK else opponent_piece_count <= -2
         return result
 
     def all_pieces_in_home(self):
-        home_range = range(18, 24) if self.color == "white" else range(0, 6)
+        home_range = range(18, 24) if self.color == WHITE else range(0, 6)
         for i in range(24):
             if self.is_piece_at_position(i, self.color) and i not in home_range:
                 return False
@@ -300,7 +300,7 @@ class Player:
         if color is None:
             color = self.color
 
-        if color == "white":
+        if color == WHITE:
             target = from_pos + distance
             if target >= 24:
                 target = self.get_escaped_position(color)
@@ -318,7 +318,7 @@ class Player:
         if color is None:
             color = self.color
             
-        if self.color == "white":
+        if self.color == WHITE:
             distance = to_pos - from_pos
             if to_pos == self.get_escaped_position(color):
                 distance = 23 - from_pos + 1
@@ -342,7 +342,7 @@ class Player:
         """
         if color is None:
             color = self.color
-        return 24 if color == "white" else 25
+        return 24 if color == WHITE else 25
 
     def get_escaped_position(self, color=None):
         """
@@ -351,4 +351,4 @@ class Player:
         """
         if color is None:
             color = self.color
-        return 26 if color == "white" else 27
+        return 26 if color == WHITE else 27
