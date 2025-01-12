@@ -1,3 +1,4 @@
+import random
 import time
 from Player import Player
 from BoardTree import BoardTree, BoardNode
@@ -8,6 +9,7 @@ import copy
 class AI_Player(Player):
     def __init__(self, color: str, board= START_BOARD, ratios= EVAL_DISTRIBUTION):
         super().__init__(color, board, is_human= False)
+        
         self.ratios = ratios
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
@@ -67,14 +69,16 @@ class AI_Player(Player):
         # Pick the best move from children of root, e.g., highest evaluation
         best_child = self.UCT_search(self.board_tree.root, roll, time)  
 
+        best_move = None
         if best_child:
-            best_move = best_child.get_last_move()          
+            best_move = best_child.get_last_move()
 
         if best_move:
             print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_child.wins}")
             return best_move
         else: 
-            return self.heuristic_play(roll) # If no valid moves found, return best heuristic move
+            print("No valid moves available for AI.")
+            return []
             
 
     def UCT_search(self, node: BoardNode, roll: list, time_lim = AI_TURN_TIME):
@@ -87,20 +91,13 @@ class AI_Player(Player):
         """
 
         end_time = time.time() + time_lim
-        best_score = float('-inf')
-        best_node = None
+        sent_roll = copy.deepcopy(roll)
 
         while time.time() < end_time:
-            nodeL = self.mcts_select(node, roll)
-            if nodeL is not None:
-                simulation_result = self.mcts_simulate(nodeL)
-                self.mcts_backpropagate(nodeL, simulation_result)
-                if nodeL.wins > best_score:
-                    best_score = nodeL.wins
-                    best_node = nodeL
+            self.mcts_select(node, sent_roll)
+            sent_roll = None
 
-        best_ucb_child = node.get_best_ucb_child()
-        return best_node if best_ucb_child is None else best_ucb_child
+        return node.get_best_ucb_child()
 
     def mcts_select(self, node: BoardNode, roll: list = None)-> BoardNode:
         """
@@ -111,16 +108,18 @@ class AI_Player(Player):
         
         # Keep selecting moves while the node is valid and not a terminal state
         while current_node is not None and not current_node.is_terminal():
-            
-            # If the node is not fully expanded, we try to expand
+            gen_all = True
+            if roll is None:
+                gen_all = False
+                roll = self.get_random_roll()
+
+            # If the node is not fully expanded, expand it
             if not current_node.is_fully_expanded(roll):
-                if roll is None:
-                    roll = self.get_possible_rolls()
-                    child_node = self.mcts_expand(current_node, roll)
-                else:
+                if gen_all:
                     child_node = self.mcts_expand_all_moves(current_node, roll)
-                roll = None
-                
+                else:
+                    child_node = self.mcts_expand(current_node, roll)
+
                 # If expand() returns None, it means no new child could be created
                 # (often due to no legal moves). Stop selection.
                 if child_node is None:
@@ -162,16 +161,19 @@ class AI_Player(Player):
                 self.get_next_player(node.player_turn)
             )
             node.add_child(new_node)
-                
-        
+            self.mcts_backpropagate(new_node, self.mcts_simulate(new_node))
+
         # Mark this node as fully expanded now that we added all moves.
         node.fully_expand_roll(roll)
+
+        return node.get_best_ucb_child(MCTS_C, 1 if node.player_turn == self.color else -1)
                 
     def mcts_expand(self, node: BoardNode, roll: list, ) -> BoardNode:
         """
         If not terminal and there's an unexpanded move, add one child node; otherwise,
         return node as is.
         """
+
         if node.is_fully_expanded(roll):
             return node
         
@@ -184,21 +186,23 @@ class AI_Player(Player):
         for child in node.children:
             last_moves.append(child.get_last_move())
 
-        if last_moves is not None:
-            for move in all_moves:
-                if move not in last_moves:
-                    new_board = self.simulate_moves(copy.deepcopy(node.board), move, current_color=node.player_turn)
-                    new_node = BoardNode(
-                        new_board,
-                        0.0,
-                        node.path + [move],
-                        self.get_next_player(node.player_turn)
-                    )
-                    node.add_child(new_node)
-                    return new_node
+        for move in all_moves:
+            if move not in last_moves:
+                new_board = self.simulate_moves(copy.deepcopy(node.board), move, current_color=node.player_turn)
+                new_node = BoardNode(
+                    new_board,
+                    0.0,
+                    node.path + [move],
+                    self.get_next_player(node.player_turn)
+                )
+                node.add_child(new_node)
+                print(f"new node: moves:{new_node.path}")
+                self.mcts_backpropagate(new_node, self.mcts_simulate(new_node))
+                return new_node
                 
         # Mark this node as fully expanded now that we added all moves.
         node.fully_expand_roll(roll)
+        return node
 
     def mcts_simulate(self, node: BoardNode) -> float:
         """
@@ -223,6 +227,7 @@ class AI_Player(Player):
             return all_moves[0]
         else:
             return []
+        
     def heuristic_play(self, roll: list) -> list:
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
         best_move, best_score = self.choose_best_move(all_moves)
@@ -290,6 +295,14 @@ class AI_Player(Player):
             total = sum(child.evaluation for child in node.children)
             node.evaluation = total / len(node.children)
 
+    def get_random_roll(self) -> list:
+        i = random.randint(1, 6)
+        j = random.randint(1, 6)
+        if i == j:
+            return [i, i, i, i]
+        else:
+            return [i, j]
+        
     def get_possible_rolls(self) -> list:
         """
         Generate all unique dice roll combinations.

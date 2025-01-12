@@ -11,6 +11,11 @@ def evaluate_position(board, ratios=EVAL_DISTRIBUTION):
     :param ratios: A dictionary containing the evaluation ratios. The sum of the values should be 1.
     :return: The evaluated score of the board, clamped to [0, 1].
     """
+    #Game is already won
+    if board[24] == 15:
+        return 1.0
+    if board[25] == 15:
+        return 0.0
     
     # Validate ratios
     if len(ratios) != len(EVAL_DISTRIBUTION):

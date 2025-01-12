@@ -33,10 +33,10 @@ class BoardNode:
         return self.terminal
     
     def is_fully_expanded(self, roll):
-        return set(roll) in self.fully_expanded_rolls
+        return roll.sort() in self.fully_expanded_rolls
     
     def fully_expand_roll(self, roll):
-        self.fully_expanded_rolls.append(set(roll))
+        self.fully_expanded_rolls.append(roll.sort())
     
     def get_evaluation(self):
         """
@@ -74,13 +74,15 @@ class BoardNode:
         """
         Get the child node with the highest UCB value.
         """
-        best_child = None
+        if not self.children:
+            return None
+        
+        best_child = self.children[0]
         best_ucb = float("-inf")
         for child in self.children:
             ucb = child.get_ucb(c , direction)
             if ucb > best_ucb:
-                best_ucb = ucb
-                best_child = child
+                best_child , best_ucb = child , ucb
         return best_child
     
     def get_most_visited_child(self):
@@ -153,11 +155,7 @@ class BoardTree:
         Reset the tree by clearing all nodes except the root.
         """
         # Update the board tree root with the current board state
-        self.root.board = board
-        self.root.evaluation = evaluation
-        self.root.path = []
-        self.root.player_turn = color
-        self.root.children = []  # Clear previous children
+        self.update_root(BoardNode(board, evaluation, path=[], player_turn=color))
         
     def update_root(self, new_root):
         self.root = new_root
