@@ -28,7 +28,7 @@ window.title("Backgammon Game")
 
 # Create an instance of the BackgammonGame
 
-game = BackgammonGameGUI(window, players5)
+game = BackgammonGameGUI(window, players4)
 
 # Start the Tkinter main loop
 window.mainloop()

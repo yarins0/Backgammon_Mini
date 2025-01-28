@@ -1,10 +1,10 @@
 from tkinter import Tk
 from GUI import BackgammonGameGUI
-from Constants import EVAL_DISTRIBUTION
+from Constants import EVAL_DISTRIBUTION, NETWORK_TRAINING
 
 import random
 
-NUM_AI_PLAYERS = 30  # Adjust the number of AI players
+NUM_AI_PLAYERS = 20  # Adjust the number of AI players
 UNIT_RATIO = 0.05  # Ratio unit (0.05 = 1/20)
 
 def generate_random_ratios():
@@ -37,11 +37,13 @@ if __name__ == "__main__":
     window = Tk()
     window.title("Backgammon AI Tournament")
 
-    # Generate a list of AI players with random ratios
-    players = ["AI"]
-    for _ in range(NUM_AI_PLAYERS):
-        ratios = generate_random_ratios()
-        players.append(["AI", ratios])
+    if NETWORK_TRAINING:
+        players = ["AI"] * NUM_AI_PLAYERS  # Generate a list of AI players
+    else: # Generate a list of AI players with random ratios
+        players = ["AI"]
+        for _ in range(NUM_AI_PLAYERS):
+            ratios = generate_random_ratios()
+            players.append(["AI", ratios])
 
     # Initialize the game GUI with the list of players
     game_gui = BackgammonGameGUI(window, players)

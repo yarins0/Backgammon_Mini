@@ -1,5 +1,6 @@
 
 from Constants import EVAL_DISTRIBUTION
+from Player import get_escaped_position
 
 
 def evaluate_position(board, ratios=EVAL_DISTRIBUTION):
@@ -271,3 +272,27 @@ def count_home_board_points(board, is_white):
     start, end = (18, 24) if is_white else (0, 6)
     return sum(1 for point in range(start, end) if board[point] * direction >= 2)
 
+def win_based_evaluation(board, winner):
+    """
+    Evaluates the current board position, allowing partial scores for different
+    types of victories. The final score is clamped to [0, 1], with scores above 
+    0.5 favoring White, and below 0.5 favoring Black.
+
+    :param board: The current board state.
+    :param winner: Set to 'white' or 'black' if this board follows a winning move.
+    :return: The evaluated score, in [0, 1].
+    """
+    loser = 'white' if winner == 'black' else 'black'
+    loser_remaining = 15 - board[get_escaped_position(loser)]  # Check the escape position for the loser
+
+    # We'll define a simple linear approach from loser_remaining = 15 => 1.0
+    # down to loser_remaining = 0 => original "score" from above (score ∈ [0,1]).
+    # If loser_remaining=1 => ~0.55 => we place that in between linearly.
+    high_br, high_val = 15, 1.0
+    low_br, low_val = 1, 0.55  # original 'score' is baseline if loser pieces left=1
+
+    ratio = (loser_remaining - low_br) / float(high_br - low_br)
+
+    # Weighted outcome between high_val (if loser_remaining=15) and low_val (if loser_remaining=0)
+    custom_score = low_val + ratio * (high_val - low_val)
+    return custom_score

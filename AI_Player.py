@@ -1,6 +1,6 @@
 import random
 import time
-from Player import Player
+from Player import *
 from BoardTree import BoardTree, BoardNode
 from Constants import *
 from Eval_position import evaluate_position
@@ -342,7 +342,7 @@ class AI_Player(Player):
             all_moves.append(move_sequence)
             return
 
-        captured_pos = self.get_captured_position(current_color)
+        captured_pos = get_captured_position(current_color)
         pieces_on_bar = board[captured_pos]
         possible_moves_found = False
 
@@ -376,7 +376,7 @@ class AI_Player(Player):
 
     def generate_valid_moves(self, roll_values: list, board: list, current_color: str) -> list:
         moves = []
-        captured_position = self.get_captured_position(current_color)
+        captured_position = get_captured_position(current_color)
 
         if self.captured_piece_on_board(board, current_color):
             from_positions = [captured_position]
@@ -426,7 +426,7 @@ class AI_Player(Player):
         
         roll_values = [int(value) for value in roll_values]
 
-        if from_pos == self.get_captured_position(current_color):
+        if from_pos == get_captured_position(current_color):
             move_distance = None
             for die_value in roll_values:
                 expected_to_pos = die_value - 1 if current_color == WHITE else 24 - die_value
@@ -436,7 +436,7 @@ class AI_Player(Player):
             if move_distance is None:
                 return False
             
-        elif to_pos == self.get_escaped_position(current_color):
+        elif to_pos == get_escaped_position(current_color):
             if not self.all_pieces_in_home_board(board, current_color):
                 return False
             if not self.can_bear_off_from_position(from_pos, board, current_color):
@@ -500,7 +500,7 @@ class AI_Player(Player):
     def capture_opponent_piece(self, board, position, current_color):
         opp_color = WHITE if current_color == BLACK else BLACK
         self.remove_piece_from_board(board, position, opp_color)
-        board[self.get_captured_position(opp_color)] += 1
+        board[get_captured_position(opp_color)] += 1
 
     def add_piece_to_board(self, board, position, current_color):
         if 0 <= position <= 23:
@@ -521,7 +521,7 @@ class AI_Player(Player):
             board[position] -= 1  # bearing off or captured
 
     def captured_piece_on_board(self, board, color):
-        return board[self.get_captured_position(color)] > 0
+        return board[get_captured_position(color)] > 0
 
     def is_piece_at_position_on_board(self, position, board, color = None):
         if color is None:
@@ -535,4 +535,4 @@ class AI_Player(Player):
         if color is None:
             color = self.color
 
-        return board[self.get_escaped_position(color)] == 15
+        return board[get_escaped_position(color)] == 15
