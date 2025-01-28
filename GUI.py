@@ -1,9 +1,10 @@
 from tkinter import *
-from Player import Player
+from Player import *
 from AI_Player import AI_Player
 from Human_Player import Human_Player
 from game_logic import roll
 from BoardTree import BoardTree
+from HeuristicNet import boards_based_training
 from Constants import *
 import random
 
@@ -22,6 +23,9 @@ class BackgammonGameGUI:
         self.auto_render = True  # Flag to control automatic rendering
         self.current_game_index = 0  # Track the current game index
 
+        # Initialize the game board
+        self.board = START_BOARD.copy()
+        
         # Initialize the first pair of players
         self.initialize_players(0, 1)
 
@@ -35,16 +39,14 @@ class BackgammonGameGUI:
         black_player, black_ratios = self.parse_player(self.players[i])
         white_player, white_ratios = self.parse_player(self.players[j])
 
-        # Initialize the game board
-        self.board = START_BOARD
-
         # Create player instances with the shared board
         self.black = AI_Player(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
         self.white = AI_Player(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
-
-
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
+            # Initialize the game board
+            self.board = START_BOARD.copy()
+
             self.black_idx, self.white_idx = self.get_player_indices(self.current_game_index)
             self.initialize_players(self.black_idx, self.white_idx)
             self.current_game_index += 1
@@ -68,17 +70,7 @@ class BackgammonGameGUI:
     def start_game(self):
         print("Starting new game.")
         self.clear_board()
-
-        # Initialize the board history
-        self.board_history = []
-        self.current_board_index = -1
         self.update_and_render_board()
-
-        # Ensure that board history is initialized before accessing it
-        if self.board_history:
-            initial_board = self.board_history[self.current_board_index]
-            self.white.set_board_tree(BoardTree(initial_board, 0.5))
-            self.black.set_board_tree(BoardTree(initial_board, 0.5))
 
         # Print starting game information
         black_type = "AI" if not self.black.is_human else "Human"
@@ -213,8 +205,8 @@ class BackgammonGameGUI:
         self._canvas.pack(pady=10)
 
         # Bindings for human move events
-        self._canvas.bind('<Button-1>', self.humanMove1)
-        self._canvas.bind('<Button-3>', self.humanMove2)
+        self._canvas.bind('<Button-1>', self.human_move1)
+        self._canvas.bind('<Button-3>', self.human_move2)
 
     def roll(self):
         self.r = roll()
@@ -283,7 +275,7 @@ class BackgammonGameGUI:
                     # Handle borne-off pieces if needed
         self._canvas.update_idletasks()  # Ensure the canvas is refreshed
 
-    def humanMove1(self, event):
+    def human_move1(self, event):
         if self.current_board_index != len(self.board_history) - 1:
             self.title.set("You can only make moves on the latest board state.")
             return
@@ -296,8 +288,7 @@ class BackgammonGameGUI:
             self.title.set("That's an invalid piece to pick")
             return
         self.title.set('Choose a position to move it to (right click)')
-
-    def humanMove2(self, event):
+    def human_move2(self, event):
         if self.current_board_index != len(self.board_history) - 1:
             self.title.set("You can only make moves on the latest board state.")
             return
@@ -329,7 +320,6 @@ class BackgammonGameGUI:
             self.end_turn()
         else:
             self.title.set('Choose a piece to move')
-
     def select(self, event):
         x = event.x // TRI_WIDTH
         y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
@@ -337,7 +327,7 @@ class BackgammonGameGUI:
         if y == 0:
             self.selected = 11 - x  # Top row positions 11 to 0
         elif y == 1:
-            self.selected = self.current_player().get_captured_position()
+            self.selected = get_captured_position(self.current_player().color)
         else:
             self.selected = x + 12  # Bottom row positions 12 to 23
 
@@ -348,7 +338,6 @@ class BackgammonGameGUI:
             if self.selected == 24: # Black captured pieces
                 self.selected = 25
         #print(f"Source selected: {self.selected} (x={x}, y={y})")
-
     def goto(self, event):
         x = event.x // TRI_WIDTH
         y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
@@ -356,7 +345,7 @@ class BackgammonGameGUI:
         if y == 0:
             self.destination = 11 - x  # Top row positions 11 to 0
         elif y == 1:
-            self.destination = self.current_player().get_captured_position()
+            self.destination = get_captured_position(self.current_player().color)
         else:
             self.destination = x + 12  # Bottom row positions 12 to 23
 
@@ -374,11 +363,11 @@ class BackgammonGameGUI:
 
     def other_player(self):
         return self.black if self.turn == self.WHITE else self.white
-
     def check_win_condition(self):
         current_player = self.current_player()
         if current_player.win():
             winner_color = current_player.color
+            print(f'{winner_color.capitalize()} has won the game!')
             self.title.set(f'{winner_color.capitalize()} has won the game!')
 
             self.rollButton.config(state=DISABLED)
@@ -394,17 +383,18 @@ class BackgammonGameGUI:
                 player_idx = self.black_idx
             self.scores[player_idx] += 1
 
+            if (NETWORK_TRAINING):
+                boards_based_training(self.board_history)
+
             # Schedule the next game after a delay or end the session
             self.window.after(AI_DELAY, self.start_next_game())
 
             return True
         return False
-
     def switch_turn(self):
         if DEBUG_MODE:
             print(f"{self.board}")
         self.turn = self.WHITE if self.turn == self.BLACK else self.BLACK
-
     def end_turn(self):
         self.auto_render = True  # Resume automatic rendering
         self.rolls.set('')
@@ -415,7 +405,6 @@ class BackgammonGameGUI:
 
         self.switch_turn()
         self.prepare_turn()
-
     def prepare_turn(self):
         current_player = self.current_player()
 
@@ -428,7 +417,6 @@ class BackgammonGameGUI:
             self.rollButton.config(state=DISABLED)
             self.endButton.config(state=DISABLED)
             self.AI_turn()
-
     def AI_turn(self):
         computer_roll = roll()
         print(f"Computer roll: {computer_roll}")
@@ -437,7 +425,6 @@ class BackgammonGameGUI:
         rolled = ' '.join(map(str, computer_roll))
         self.rolls.set(rolled)
         self.title.set(f"AI ({self.current_player().color}) rolled: {rolled}")
-
         #try:
         move_sequence = self.current_player().play(self.board , computer_roll)
         if move_sequence:
@@ -450,10 +437,9 @@ class BackgammonGameGUI:
 
         print(f"Ended AI ({self.turn}) turn")
         self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
-
     def update_and_render_board(self):
         # Update the board state and render it immediately
-        self.board_history.append(self.board.copy())
+        self.board_history.append([self.board.copy(), self.turn])
         self.current_board_index += 1
         self.render_board(self.board)
 
@@ -461,7 +447,7 @@ class BackgammonGameGUI:
         if self.current_board_index > 0:
             self.auto_render = False  # Pause automatic rendering
             self.current_board_index -= 1
-            previous_board = self.board_history[self.current_board_index]
+            previous_board = self.board_history[self.current_board_index][0]
             self.render_board(previous_board)
         else:
             print("No previous board state available.")
@@ -470,7 +456,7 @@ class BackgammonGameGUI:
         if self.current_board_index < len(self.board_history) - 1:
             self.auto_render = False  # Pause automatic rendering
             self.current_board_index += 1
-            next_board = self.board_history[self.current_board_index]
+            next_board = self.board_history[self.current_board_index][0]
             self.render_board(next_board)
         else:
             print("No next board state available.")

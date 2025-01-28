@@ -78,12 +78,9 @@ class Player:
     
     def set_board_tree(self, board_tree):
         self.board_tree = board_tree
-
-
     def win(self):
         # Check if the player has all 15 pieces borne off (escaped)
-        return self.board[self.get_escaped_position()] == 15
-    
+        return self.board[get_escaped_position(self.color)] == 15  
     def get_next_player(self , color = None):
         if color is None:
             color = self.color
@@ -94,11 +91,11 @@ class Player:
         rolls = [int(value) for value in rolls]
 
         # Validate that the piece to move is valid
-        if from_pos != self.get_captured_position() and not self.is_piece_at_position(from_pos, self.color):
+        if from_pos != get_captured_position(self.color) and not self.is_piece_at_position(from_pos, self.color):
             raise ValueError('The chosen piece is not valid')
 
         # If the player has captured pieces, they must move them first
-        if self.captured_piece() and from_pos != self.get_captured_position():
+        if self.captured_piece() and from_pos != get_captured_position(self.color):
             raise ValueError('You must move your captured piece first')
 
         # Validate the move
@@ -127,7 +124,7 @@ class Player:
 
     def is_move_distance_valid(self, from_pos, to_pos, die_value):
         # Checks if a specific die value allows moving from from_pos to to_pos
-        if from_pos == self.get_captured_position():
+        if from_pos == get_captured_position(self.color):
             # Re-entering from the bar
             expected_to_pos = die_value - 1 if self.color == WHITE else 24 - die_value
             return expected_to_pos == to_pos
@@ -135,11 +132,11 @@ class Player:
             if self.color == 'white':
                 expected_to_pos = from_pos + die_value
                 if expected_to_pos >= 24:
-                    expected_to_pos = self.get_escaped_position()
+                    expected_to_pos = get_escaped_position(self.color)
             else:
                 expected_to_pos = from_pos - die_value
                 if expected_to_pos < 0:
-                    expected_to_pos = self.get_escaped_position()
+                    expected_to_pos = get_escaped_position(self.color)
             return expected_to_pos == to_pos
             
     def valid_move(self, from_pos: int, to_pos: int, rolls: list) -> bool:
@@ -150,7 +147,7 @@ class Player:
             raise TypeError(f"Expected rolls to be a list, got {type(rolls)}")
 
         # If the player has captured pieces, they must move them first
-        if self.captured_piece() and from_pos != self.get_captured_position():
+        if self.captured_piece() and from_pos != get_captured_position(self.color):
             print("Must move captured piece first")
             return False  # Must move captured pieces first
 
@@ -158,7 +155,7 @@ class Player:
         for die in rolls:
             if self.is_move_distance_valid(from_pos, to_pos, die):
                 # Additional checks for blocked positions
-                if to_pos == self.get_escaped_position():
+                if to_pos == get_escaped_position(self.color):
                     if not self.all_pieces_in_home():
                         print("All pieces must be in home to bear off")
                         return False
@@ -251,7 +248,7 @@ class Player:
         return total
 
     def captured_piece(self):
-        return self.board[self.get_captured_position()] > 0
+        return self.board[get_captured_position(self.color)] > 0
 
     def capture_piece_at_position(self, position):
         if self.is_opponent_vulnerable_at_position(position):
@@ -260,7 +257,7 @@ class Player:
             opponent_color = BLACK if self.color == WHITE else WHITE
             self.remove_piece_from_board(self.board, position , opponent_color)
             # Place it on the bar (captured pieces)
-            self.board[self.get_captured_position(opponent_color)] += 1
+            self.board[get_captured_position(opponent_color)] += 1
 
     def is_opponent_vulnerable_at_position(self, position):
         if position < 0 or position > 23:
@@ -291,7 +288,7 @@ class Player:
 
         # Adjust for bearing off
         if (self.color == 'white' and expected_to_pos >= 24) or (self.color == 'black' and expected_to_pos < 0):
-            expected_to_pos = self.get_escaped_position()
+            expected_to_pos = get_escaped_position(self.color)
 
         if expected_to_pos == to_pos:
             return die_value
@@ -305,14 +302,14 @@ class Player:
         if color == WHITE:
             target = from_pos + distance
             if target >= 24:
-                target = self.get_escaped_position(color)
-            if from_pos == self.get_captured_position(color):
+                target = get_escaped_position(color)
+            if from_pos == get_captured_position(color):
                 target = distance - 1
         else:
             target = from_pos - distance
             if target < 0:
-                target = self.get_escaped_position(color)
-            if from_pos == self.get_captured_position(color):
+                target = get_escaped_position(color)
+            if from_pos == get_captured_position(color):
                 target = 24 - distance
         return target
 
@@ -322,35 +319,35 @@ class Player:
             
         if self.color == WHITE:
             distance = to_pos - from_pos
-            if to_pos == self.get_escaped_position(color):
+            if to_pos == get_escaped_position(color):
                 distance = 23 - from_pos + 1
-            if from_pos == self.get_captured_position(color):
+            if from_pos == get_captured_position(color):
                 distance = to_pos + 1
         else:
             distance = from_pos - to_pos
-            if to_pos == self.get_escaped_position(color):
+            if to_pos == get_escaped_position(color):
                 distance = from_pos + 1
-            if from_pos == self.get_captured_position(color):
+            if from_pos == get_captured_position(color):
                 distance = 24 - to_pos
         return distance
     
     def is_bearing_off_position(self, position):
-        return position == self.get_escaped_position()
+        return position == get_escaped_position()
     
-    def get_captured_position(self, color=None):
-        """
-        Return the captured (bar) position for the given color.
-        If color is not provided, defaults to self.color.
-        """
-        if color is None:
-            color = self.color
-        return 24 if color == WHITE else 25
+def get_captured_position(color=None):
+    """
+    Return the captured (bar) position for the given color.
+    If color is not provided, defaults to self.color.
+    """
+    if color is None:
+        color = color
+    return 24 if color == WHITE else 25
 
-    def get_escaped_position(self, color=None):
-        """
-        Return the escaped (borne off) position for the given color.
-        If color is not provided, defaults to self.color.
-        """
-        if color is None:
-            color = self.color
-        return 26 if color == WHITE else 27
+def get_escaped_position(color=None):
+    """
+    Return the escaped (borne off) position for the given color.
+    If color is not provided, defaults to self.color.
+    """
+    if color is None:
+        color = color
+    return 26 if color == WHITE else 27
