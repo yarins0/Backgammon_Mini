@@ -6,9 +6,21 @@ NETWORK_TRAINING = True # Set to True to train the neural network
 # Game parameters
 WHITE = "white"
 BLACK = "black"
+
+AI = "AI"
+RAND_AI = "Random_AI"
+HEUR_AI = "Heuristic_AI"
+MIN_MAX_AI = "Min_Max_AI"
+MCTS_AI = "MCTS_AI"
+HUMAN = "Human"
+
+
 START_BOARD = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0]
 
-CHOSEN_EVAL_METHOD = 1 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max)
+CHOSEN_EVAL_METHOD = 4 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max), 4 for neural network
+
+# Neural network parameters
+PATH = "HeuristicNet.pth"
 
 # Min-max parameters
 MIN_MAX_DEPTH = 1  # Default depth for min-max search

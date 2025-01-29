@@ -1,5 +1,6 @@
 import random
 import time
+from HeuristicNet import neural_eval
 from Player import *
 from BoardTree import BoardTree, BoardNode
 from Constants import *
@@ -7,10 +8,12 @@ from Eval_position import evaluate_position
 import copy
 
 class AI_Player(Player):
-    def __init__(self, color: str, board= START_BOARD, ratios= EVAL_DISTRIBUTION):
+    def __init__(self, color: str, board= START_BOARD, ratios= EVAL_DISTRIBUTION, model_path=PATH):
         super().__init__(color, board, is_human= False)
         
         self.ratios = ratios
+        self.model_path = model_path
+
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
@@ -36,7 +39,8 @@ class AI_Player(Player):
             )
             # Run MCTS to pick a move
             return self.mcts_play(roll, time)
-        else:
+        
+        elif CHOSEN_EVAL_METHOD == 3:
             # Strategic (minimax) approach
             self.board_tree.reset_tree(
                 copy.deepcopy(self.board),
@@ -45,6 +49,8 @@ class AI_Player(Player):
             )
             self.gen_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
             return self.strategic_play()
+        else:
+            return self.neural_play(roll)  # Default to neural evaluation
         
         #for turnaments in anni platform:
         #if executed_moves:
@@ -55,6 +61,31 @@ class AI_Player(Player):
     
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
 
+    def neural_play(self, roll: list) -> list:
+        all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
+        best_move, best_score = self.choose_neural_best_move(all_moves)
+
+        if best_move:
+            print(f"Neural AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            return best_move
+        else:
+            print("No valid moves available for Neural AI.")
+            return []
+        
+    def choose_neural_best_move(self, all_moves):
+        turn = 0 if self.color == WHITE else 1
+        best_score = float('-inf')
+        best_move = None
+
+        for moves in all_moves:
+            new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
+            score = neural_eval(new_board, turn, self.model_path)
+            if score == 1.0: #best possible score
+                return moves, score
+            if score > best_score:
+                best_score = score
+                best_move = moves
+        return best_move, best_score    
     def mcts_play(self, roll: list, time = AI_TURN_TIME) -> list:
         """
         Executes a move using an MCTS-based approach. 
@@ -80,7 +111,6 @@ class AI_Player(Player):
             print("No valid moves available for AI.")
             return []
             
-
     def UCT_search(self, node: BoardNode, roll: list, time_lim = AI_TURN_TIME):
         """ 
         Repeatedly run MCTS iterations until we run out of time, keeping track of the best move found.
@@ -229,8 +259,11 @@ class AI_Player(Player):
             return []
         
     def heuristic_play(self, roll: list) -> list:
+        '''
+        Get the best move best on possible boards heuristic evaluation.
+        '''
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
-        best_move, best_score = self.choose_best_move(all_moves)
+        best_move, best_score = self.choose_heuristic_best_move(all_moves)
 
         if best_move:
             print(f"AI ({self.color}) executed moves: {best_move} with score: {best_score}")
@@ -238,6 +271,21 @@ class AI_Player(Player):
         else:
             print("No valid moves available for AI.")
             return []
+        
+    def choose_heuristic_best_move(self, all_moves):
+        best_score = float('-inf') if self.color == WHITE else float('inf')
+        best_move = None
+
+        for moves in all_moves:
+            new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
+            score = evaluate_position(new_board, self.ratios)
+            if (self.color == WHITE and score > best_score) or (self.color == BLACK and score < best_score):
+                best_score = score
+                best_move = moves
+
+        return best_move, best_score
+
+    
     def strategic_play(self) -> list:
         current_node = self.board_tree.root
         best_child = current_node.get_best_evaluation_child()
@@ -257,7 +305,6 @@ class AI_Player(Player):
             node.evaluation = evaluate_position(node.board, self.ratios)
             return node.evaluation
         
-
         if current_roll is not None:
             rolls_to_use = [current_roll]
         else:
@@ -316,19 +363,6 @@ class AI_Player(Player):
                 else:
                     rolls.add((i, j))
         return list(rolls)
-
-    def choose_best_move(self, all_moves):
-        best_score = float('-inf') if self.color == WHITE else float('inf')
-        best_move = None
-
-        for moves in all_moves:
-            new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
-            score = evaluate_position(new_board, self.ratios)
-            if (self.color == WHITE and score > best_score) or (self.color == BLACK and score < best_score):
-                best_score = score
-                best_move = moves
-
-        return best_move, best_score
 
     def generate_all_moves(self, board: list, roll: list, current_color=None) -> list:
         if current_color is None:
