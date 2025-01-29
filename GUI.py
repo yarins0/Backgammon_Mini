@@ -11,11 +11,6 @@ import random
 TRI_WIDTH = 50
 TRI_HEIGHT = 200
 class BackgammonGameGUI:
-    AI = "AI"
-    HUMAN = "Human"
-    WHITE = "white"
-    BLACK = "black"
-
     def __init__(self, window, players):
         self.window = window
         self.players = players
@@ -36,12 +31,13 @@ class BackgammonGameGUI:
         self.start_next_game()
 
     def initialize_players(self, i, j):
-        black_player, black_ratios = self.parse_player(self.players[i])
-        white_player, white_ratios = self.parse_player(self.players[j])
+        black_player, black_ratios, black_path = self.parse_player(self.players[i])
+        white_player, white_ratios, white_path = self.parse_player(self.players[j])
 
         # Create player instances with the shared board
-        self.black = AI_Player(self.BLACK, self.board, black_ratios) if black_player == self.AI else Human_Player(self.BLACK, self.board)
-        self.white = AI_Player(self.WHITE, self.board, white_ratios) if white_player == self.AI else Human_Player(self.WHITE, self.board)
+        self.black = AI_Player(BLACK, self.board, black_ratios, black_path) if black_player == AI else Human_Player(BLACK, self.board)
+        self.white = AI_Player(WHITE, self.board, white_ratios, white_path) if white_player == AI else Human_Player(WHITE, self.board)
+
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
             # Initialize the game board
@@ -59,7 +55,7 @@ class BackgammonGameGUI:
             winner_player = self.players[winner_idx]
             print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
             # Print the winner's ratios
-            if winner_player[0] == self.AI:
+            if winner_player[0] == AI:
                 best_ratio = winner_player[1]
                 print(f"The best ratio is: {best_ratio}")
             else:
@@ -78,7 +74,7 @@ class BackgammonGameGUI:
         print(f"Starting game between {white_type} player (white) and {black_type} player (black)")
 
         # Start the first turn with white
-        self.turn = self.WHITE
+        self.turn = WHITE
         self.prepare_turn()
 
     def get_player_indices(self, game_index):
@@ -94,12 +90,14 @@ class BackgammonGameGUI:
         """
         Parse the player input to determine the type and ratios.
         """
-        if isinstance(player, list) and len(player) == 2 and player[0] == self.AI:
-            return self.AI, player[1]  # AI with specified ratios
-        elif player == self.AI:
-            return self.AI, EVAL_DISTRIBUTION  # AI with default ratios
-        elif player == self.HUMAN:
-            return self.HUMAN, None  # Human player
+        if isinstance(player, list) and len(player) == 2 and player[0] == AI:
+            return AI, player[1] , PATH  # AI with specified ratios and default path
+        elif isinstance(player, list) and len(player) == 3 and player[0] == AI:
+            return AI, player[1] ,player[2]  # AI with specified ratios and path
+        elif player == AI:
+            return AI, EVAL_DISTRIBUTION, PATH  # AI with default ratios AND PATH
+        elif player == HUMAN:
+            return HUMAN, None  # Human player
         else:
             raise ValueError("Invalid player input format")
 
@@ -123,7 +121,7 @@ class BackgammonGameGUI:
     def create_board(self):
         # Initialize turn if not already set
         if not hasattr(self, 'turn'):
-            self.turn = self.WHITE
+            self.turn = WHITE
 
         # Create the top frame first
         self.top_frame = Frame(self.window)
@@ -331,7 +329,7 @@ class BackgammonGameGUI:
         else:
             self.selected = x + 12  # Bottom row positions 12 to 23
 
-        if self.current_player().color == self.white.color:
+        if self.current_player().color == WHITE:
             if self.selected == -1: # White captured pieces
                 self.selected = 24
         else:
@@ -359,10 +357,10 @@ class BackgammonGameGUI:
         #print(f"Destination selected: {self.destination} (x={x}, y={y})")
 
     def current_player(self):
-        return self.white if self.turn == self.WHITE else self.black
+        return self.white if self.turn == WHITE else self.black
 
     def other_player(self):
-        return self.black if self.turn == self.WHITE else self.white
+        return self.black if self.turn == WHITE else self.white
     def check_win_condition(self):
         current_player = self.current_player()
         if current_player.win():
@@ -377,7 +375,7 @@ class BackgammonGameGUI:
             self.auto_render = False  # Stop automatic rendering
 
             # Update scores
-            if self.current_player().color == self.WHITE:
+            if self.current_player().color == WHITE:
                 player_idx = self.white_idx
             else:
                 player_idx = self.black_idx
@@ -394,7 +392,7 @@ class BackgammonGameGUI:
     def switch_turn(self):
         if DEBUG_MODE:
             print(f"{self.board}")
-        self.turn = self.WHITE if self.turn == self.BLACK else self.BLACK
+        self.turn = WHITE if self.turn == BLACK else BLACK
     def end_turn(self):
         self.auto_render = True  # Resume automatic rendering
         self.rolls.set('')
