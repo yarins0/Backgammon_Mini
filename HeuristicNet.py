@@ -5,9 +5,8 @@ import torch.optim as optim
 import numpy as np
 import random
 from Eval_position import evaluate_position, win_based_evaluation
-from Constants import WHITE, BLACK
+from Constants import PATH, WHITE, BLACK
 
-PATH = "HeuristicNet.pth"
 BOARD_SIZE = 28  # Board format length
 NUM_SAMPLES = 500 # Number of samples to generate for training
 
@@ -113,8 +112,9 @@ def generate_random_board(BOARD_SIZE):
 
 # Train the Neural Network
 def train_network(model, criterion, optimizer, data, epochs=20, batch_size=32):
-    model.eval()
-
+    """
+    Train the neural network using the provided data.
+    """
     # Prepare data
     boards, values = zip(*data)
     boards = torch.tensor(boards, dtype=torch.float32)
@@ -145,6 +145,7 @@ def boards_based_training(board_history):
     model.load_state_dict(torch.load(PATH, weights_only=True))
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    model.eval()
     print("Initial network loaded and trained.")
     
     model = train_network(model, criterion, optimizer, generate_data_from_boards(board_history))
@@ -160,6 +161,7 @@ def iter_training():
     model.load_state_dict(torch.load(PATH, weights_only=True))
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    model.eval()
     print("Initial network loaded and trained.")
     print(f"Running...")
 
@@ -185,6 +187,28 @@ def iter_training():
 
     print("Training complete!")
 
+def neural_eval(board, turn=0, model_path=PATH):
+    """
+    Evaluate a board configuration using a trained model.
+
+    Args:
+        board (list): The board configuration (length is BOARD_SIZE).
+        model_path (str): Path to the trained model.
+        turn (int): 0 indicates White, 1 indicates Black.
+
+    Returns:
+        float: The evaluation score between 0 and 1 (favoring White as score approaches 1).
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = HeuristicNet(BOARD_SIZE).to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+
+    with torch.no_grad():
+        x = torch.tensor(board + [turn], dtype=torch.float32, device=device)
+        x = x.unsqueeze(0)  # Add batch dimension
+        prediction = model(x)
+    return prediction.item()
 
 if __name__ == "__main__":
     iter_training()
