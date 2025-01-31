@@ -4,8 +4,9 @@ from Constants import EVAL_DISTRIBUTION, NETWORK_TRAINING
 
 import random
 
-NUM_AI_PLAYERS = 20  # Adjust the number of AI players
+NUM_AI_PLAYERS = 5  # Adjust the number of AI players
 UNIT_RATIO = 0.05  # Ratio unit (0.05 = 1/20)
+
 
 def generate_random_ratios():
     total_units = int(1.0/UNIT_RATIO)             # Total number of units
@@ -33,7 +34,14 @@ def generate_random_ratios():
         "captured_pieces": ratios[5] * UNIT_RATIO
     }
 
-if __name__ == "__main__":
+def print_players_ratios(players):
+    i=0
+    for player in players:
+        if player[0] == "AI":
+            print(f"AI player {i} with ratios: {player[1]}")
+        i += 1
+
+def turnament():
     window = Tk()
     window.title("Backgammon AI Tournament")
 
@@ -51,8 +59,7 @@ if __name__ == "__main__":
     # Start the GUI event loop
     window.mainloop()
 
-    i=0
-    for player in players:
-        if player[0] == "AI":
-            print(f"AI player {i} with ratios: {player[1]}")
-        i += 1
+    print_players_ratios(players)
+
+if __name__ == "__main__":
+    turnament()
