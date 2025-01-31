@@ -129,7 +129,7 @@ class Player:
             expected_to_pos = die_value - 1 if self.color == WHITE else 24 - die_value
             return expected_to_pos == to_pos
         else:
-            if self.color == 'white':
+            if self.color == WHITE:
                 expected_to_pos = from_pos + die_value
                 if expected_to_pos >= 24:
                     expected_to_pos = get_escaped_position(self.color)
@@ -233,7 +233,7 @@ class Player:
             color = self.color
 
         if position >= 0 and position <= 23:
-            if self.color == WHITE:
+            if color == WHITE:
                 board[position] -= 1
             else:
                 board[position] += 1
@@ -252,10 +252,12 @@ class Player:
 
     def capture_piece_at_position(self, position):
         if self.is_opponent_vulnerable_at_position(position):
-            print(f"Capturing opponent piece at position {position}")
+            if DEBUG_MODE:
+                print(f"Capturing opponent piece at position {position}")
             # Remove the opponent's piece from the board
-            opponent_color = BLACK if self.color == WHITE else WHITE
+            opponent_color = self.get_next_player()
             self.remove_piece_from_board(self.board, position , opponent_color)
+
             # Place it on the bar (captured pieces)
             self.board[get_captured_position(opponent_color)] += 1
 

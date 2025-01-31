@@ -29,6 +29,7 @@ class BackgammonGameGUI:
 
         # Start the first game
         self.start_next_game()
+        return self.window.mainloop()
 
     def initialize_players(self, i, j):
         black_player, black_ratios, black_path = self.parse_player(self.players[i])
@@ -58,13 +59,12 @@ class BackgammonGameGUI:
             if winner_player[0] == AI:
                 best_ratio = winner_player[1]
                 print(f"The best ratio is: {best_ratio}")
-            else:
-                print("Winner is a human player.")
 
             self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
+            self.window.quit()
+            return
             
     def start_game(self):
-        print("Starting new game.")
         self.clear_board()
         self.update_and_render_board()
 
@@ -97,7 +97,7 @@ class BackgammonGameGUI:
         elif player == AI:
             return AI, EVAL_DISTRIBUTION, PATH  # AI with default ratios AND PATH
         elif player == HUMAN:
-            return HUMAN, None  # Human player
+            return HUMAN, None, None  # Human player
         else:
             raise ValueError("Invalid player input format")
 
@@ -207,24 +207,36 @@ class BackgammonGameGUI:
         self._canvas.bind('<Button-3>', self.human_move2)
 
     def roll(self):
+        """Handles the dice roll for a human player and starts the turn timer."""
         self.r = roll()
         self.r.sort()
         rolled = ' '.join(map(str, self.r))
         self.rolls.set(rolled)
+
+        # Disable the roll button until the turn ends
         self.rollButton.config(state=DISABLED)
-        self.title.set('Choose a piece to move')
+        self.title.set("Choose a piece to move")
+
+        # Start (or restart) the timer
         self.start_timer()
 
     def start_timer(self):
+        """Starts/restarts the countdown for the human player's turn."""
+        # Start the timer
+        self.timer_running = True
         self.time_left = TURN_TIME
         self.update_timer()
 
     def update_timer(self):
+        """Updates the countdown label every second until time runs out."""
         if self.time_left > 0:
             self.time_remaining.set(f"Time left: {self.time_left} seconds")
             self.time_left -= 1
-            self.window.after(1000, self.update_timer)
+            # Schedule the next update in 1 second
+            if self.timer_running:
+                self.window.after(1000, self.update_timer)
         else:
+            # Time’s up, end this turn automatically
             self.title.set("Time's up! Ending your turn.")
             self.end_turn()
 
@@ -393,16 +405,22 @@ class BackgammonGameGUI:
         if DEBUG_MODE:
             print(f"{self.board}")
         self.turn = WHITE if self.turn == BLACK else BLACK
+
     def end_turn(self):
+        """Ends the current turn, re-enables the roll button, and resets UI."""
         self.auto_render = True  # Resume automatic rendering
         self.rolls.set('')
         self.time_remaining.set('')
+
+        # Stop the timer to avoid confusion on next turn
+        self.timer_running = False
 
         if self.check_win_condition():
             return # Do not proceed if the game is over
 
         self.switch_turn()
         self.prepare_turn()
+
     def prepare_turn(self):
         current_player = self.current_player()
 
@@ -411,13 +429,15 @@ class BackgammonGameGUI:
             self.rollButton.config(state=NORMAL)
             self.endButton.config(state=NORMAL)
         else:
-            print(f"AI ({current_player.color}) turn started")
+            if DEBUG_MODE:
+                print(f"AI ({current_player.color}) turn started")
             self.rollButton.config(state=DISABLED)
             self.endButton.config(state=DISABLED)
             self.AI_turn()
     def AI_turn(self):
         computer_roll = roll()
-        print(f"Computer roll: {computer_roll}")
+        if DEBUG_MODE:
+            print(f"Computer roll: {computer_roll}")
 
         # Convert the dice roll to strings before joining
         rolled = ' '.join(map(str, computer_roll))
@@ -432,8 +452,8 @@ class BackgammonGameGUI:
                 self.current_player().move_piece(from_pos, to_pos, computer_roll)
                 self.update_and_render_board()
                 self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
-
-        print(f"Ended AI ({self.turn}) turn")
+        if DEBUG_MODE:
+            print(f"Ended AI ({self.turn}) turn")
         self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
     def update_and_render_board(self):
         # Update the board state and render it immediately

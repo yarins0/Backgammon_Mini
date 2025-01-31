@@ -54,7 +54,9 @@ def generate_data_from_boards(board_history):
     for board, player in board_history:
         player_value = value if winner == player else 1 - value  # Compute heuristic value
         turn = 0 if player == WHITE else 1
+
         data.append((board + [turn], player_value))
+        #data.append((board + [1-player], 1-player_value))
     return data
 
 def generate_random_board(BOARD_SIZE):
@@ -110,8 +112,27 @@ def generate_random_board(BOARD_SIZE):
 
     return board
 
+
+def _compute_validation_metrics(model, criterion, val_data):
+    """
+    Runs a simple validation pass and returns average MSE loss.
+    Since the output is 0..1, you can easily adapt this to compute accuracy or other metrics if desired.
+    """
+    model.eval()
+    if not val_data:
+        return None
+
+    with torch.no_grad():
+        boards, values = zip(*val_data)
+        boards_tensor = torch.tensor(boards, dtype=torch.float32)
+        values_tensor = torch.tensor(values, dtype=torch.float32).unsqueeze(1)
+
+        predictions = model(boards_tensor)
+        val_loss = criterion(predictions, values_tensor).item()
+    return val_loss
+
 # Train the Neural Network
-def train_network(model, criterion, optimizer, data, epochs=20, batch_size=32):
+def train_network(model, criterion, optimizer, data, epochs=20, batch_size=32, val_data=None):
     """
     Train the neural network using the provided data.
     """
@@ -134,7 +155,14 @@ def train_network(model, criterion, optimizer, data, epochs=20, batch_size=32):
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {epoch_loss / len(dataloader):.4f}")
+
+        avg_loss = epoch_loss / len(dataloader)
+        # Compute validation metrics if val_data is provided
+        val_loss = _compute_validation_metrics(model, criterion, val_data) if val_data else None
+        if val_loss is not None:
+            print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}")
+        else:
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
 
     return model
 
@@ -184,7 +212,6 @@ def iter_training():
 
     torch.save(model.state_dict(), PATH)
     print("Model saved!")
-
     print("Training complete!")
 
 def neural_eval(board, turn=0, model_path=PATH):

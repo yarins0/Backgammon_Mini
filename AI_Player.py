@@ -66,10 +66,12 @@ class AI_Player(Player):
         best_move, best_score = self.choose_neural_best_move(all_moves)
 
         if best_move:
-            print(f"Neural AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            if DEBUG_MODE:
+                print(f"Neural AI -{self.color}({self.model_path}) executed moves: {best_move} with score: {best_score}")
             return best_move
         else:
-            print("No valid moves available for Neural AI.")
+            if DEBUG_MODE:
+                print("No valid moves available for Neural AI.")
             return []
         
     def choose_neural_best_move(self, all_moves):
@@ -524,12 +526,9 @@ class AI_Player(Player):
     def is_opponent_piece_at_position_on_board(self, position, board, current_color):
         if position < 0 or position > 23:
             return False
+        
         occupant_count = board[position]
-        opp_color = WHITE if current_color == BLACK else BLACK
-        if opp_color == WHITE:
-            return occupant_count > 0
-        else:
-            return occupant_count < 0
+        return occupant_count < 0 if current_color == WHITE else occupant_count > 0
 
     def capture_opponent_piece(self, board, position, current_color):
         opp_color = WHITE if current_color == BLACK else BLACK
@@ -565,6 +564,7 @@ class AI_Player(Player):
             return board[position] > 0
         else:
             return board[position] > 0 if color == WHITE else board[position] < 0
+        
     def win_on_board(self, board, color=None):
         if color is None:
             color = self.color
