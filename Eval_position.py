@@ -1,5 +1,5 @@
 
-from Constants import EVAL_DISTRIBUTION
+from Constants import BLACK, EVAL_DISTRIBUTION, WHITE
 from Player import get_escaped_position
 
 
@@ -282,7 +282,7 @@ def win_based_evaluation(board, winner):
     :param winner: Set to 'white' or 'black' if this board follows a winning move.
     :return: The evaluated score, in [0, 1].
     """
-    loser = 'white' if winner == 'black' else 'black'
+    loser = WHITE if winner == BLACK else BLACK
     loser_remaining = 15 - board[get_escaped_position(loser)]  # Check the escape position for the loser
 
     # We'll define a simple linear approach from loser_remaining = 15 => 1.0
