@@ -5,14 +5,11 @@ import torch.optim as optim
 import numpy as np
 import random
 from Eval_position import evaluate_position, win_based_evaluation
-from Constants import PATH, WHITE, BLACK
+from Constants import PATH, WHITE, BLACK, LEARNING_RATE, EPOCHS_NUM, BOARD_SIZE, NUM_SAMPLES
 
-BOARD_SIZE = 28  # Board format length
-NUM_SAMPLES = 500 # Number of samples to generate for training
 
 # 1. Define the Neural Network
 class HeuristicNet(nn.Module):
-
     def __init__(self, input_size = BOARD_SIZE):
         super(HeuristicNet, self).__init__()
         self.fc1 = nn.Linear(input_size  + 1, 40)  # First hidden layer
@@ -31,9 +28,10 @@ def generate_data(NUM_SAMPLES, BOARD_SIZE, heuristic_func):
     data = []
     for _ in range(NUM_SAMPLES):
         board = generate_random_board(BOARD_SIZE)  # Generate random board
-        turn = random.randint(0, 1)  # Turn 0 for white, 1 for black
-        value = heuristic_func(board) if turn == 0 else 1 - heuristic_func(board)  # Compute heuristic value
-        data.append((board + [turn], value))
+        value = heuristic_func(board) # Compute heuristic value
+        data.append((board + [-1], 1 - value)) # Add board configuration and heuristic value as black
+        data.append((board + [1], value)) # Add board configuration and heuristic value as white
+
     return data
 
 def generate_data_from_boards(board_history):
@@ -53,10 +51,10 @@ def generate_data_from_boards(board_history):
 
     for board, player in board_history:
         player_value = value if winner == player else 1 - value  # Compute heuristic value
-        turn = 0 if player == WHITE else 1
+        turn = 1 if player == WHITE else -1
 
         data.append((board + [turn], player_value))
-        #data.append((board + [1-player], 1-player_value))
+        #data.append((board + [-1*  turn], 1-player_value))
     return data
 
 def generate_random_board(BOARD_SIZE):
@@ -112,7 +110,6 @@ def generate_random_board(BOARD_SIZE):
 
     return board
 
-
 def _compute_validation_metrics(model, criterion, val_data):
     """
     Runs a simple validation pass and returns average MSE loss.
@@ -132,7 +129,7 @@ def _compute_validation_metrics(model, criterion, val_data):
     return val_loss
 
 # Train the Neural Network
-def train_network(model, criterion, optimizer, data, epochs=20, batch_size=32, val_data=None):
+def train_network(model, criterion, optimizer, data, epochs=EPOCHS_NUM, batch_size=32, val_data=None):
     """
     Train the neural network using the provided data.
     """
@@ -172,7 +169,7 @@ def boards_based_training(board_history):
     model = HeuristicNet(BOARD_SIZE)
     model.load_state_dict(torch.load(PATH, weights_only=True))
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     model.eval()
     print("Initial network loaded and trained.")
     
@@ -188,7 +185,7 @@ def iter_training():
     model = HeuristicNet(BOARD_SIZE)
     model.load_state_dict(torch.load(PATH, weights_only=True))
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     model.eval()
     print("Initial network loaded and trained.")
     print(f"Running...")
@@ -211,10 +208,10 @@ def iter_training():
     print(f"Completed {current_iter} iterations.")
 
     torch.save(model.state_dict(), PATH)
-    print("Model saved!")
+    print(f"Model saved to {PATH}!")
     print("Training complete!")
 
-def neural_eval(board, turn=0, model_path=PATH):
+def neural_eval(board, turn=1, model_path=PATH):
     """
     Evaluate a board configuration using a trained model.
 

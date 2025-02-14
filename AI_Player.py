@@ -8,7 +8,16 @@ from Eval_position import evaluate_position
 import copy
 
 class AI_Player(Player):
-    def __init__(self, color: str, board= START_BOARD, ratios= EVAL_DISTRIBUTION, model_path=PATH):
+    def __init__(self, color: str = WHITE, board= START_BOARD, ratios= EVAL_DISTRIBUTION, model_path=PATH):
+        """
+        AI Player that extends the base Player class with various decision-making
+        strategies (heuristic, MCTS, neural, etc.).
+
+        :param color: 'white' or 'black'
+        :param board: The starting board state
+        :param ratios: Weights for heuristic evaluation
+        :param model_path: Path to a trained model (if using neural_eval)
+        """
         super().__init__(color, board, is_human= False)
         
         self.ratios = ratios
@@ -19,9 +28,13 @@ class AI_Player(Player):
 
     def play(self, board:list ,roll: list, current_color=None, time = AI_TURN_TIME) -> list:
         """
-        Decides which move to make based on CHOSEN_EVAL_METHOD.
-        Signature remains unchanged. 
-        board_tree.reset_tree is used instead of manual re-initialization.
+        Main entry point for the AI to decide which move to make, based on CHOSEN_EVAL_METHOD.
+
+        :param board: Current board state
+        :param roll: Dice roll (list of dice)
+        :param current_color: Whose turn it is. Defaults to self.color
+        :param time: Time limit for AI moves (used by MCTS)
+        :return: List of (from_pos, to_pos) moves decided by AI
         """
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
         self.board = board
@@ -49,8 +62,10 @@ class AI_Player(Player):
             )
             self.gen_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
             return self.strategic_play()
-        else:
+        elif CHOSEN_EVAL_METHOD == 4:
             return self.neural_play(roll)  # Default to neural evaluation
+        else:
+            return self.random_play(roll) # Default to random play
         
         #for turnaments in anni platform:
         #if executed_moves:
@@ -62,12 +77,18 @@ class AI_Player(Player):
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
 
     def neural_play(self, roll: list) -> list:
+        """
+        Use a trained neural network to evaluate all possible moves and pick the best move.
+
+        :param roll: Dice roll
+        :return: Best move as a list of (from_pos, to_pos)
+        """
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
         best_move, best_score = self.choose_neural_best_move(all_moves)
 
         if best_move:
             if DEBUG_MODE:
-                print(f"Neural AI -{self.color}({self.model_path}) executed moves: {best_move} with score: {best_score}")
+                print(f"Neural AI ({self.model_path})-{self.color} executed moves: {best_move} with score: {best_score}")
             return best_move
         else:
             if DEBUG_MODE:
@@ -75,7 +96,7 @@ class AI_Player(Player):
             return []
         
     def choose_neural_best_move(self, all_moves):
-        turn = 0 if self.color == WHITE else 1
+        turn = 1 if self.color == WHITE else -1
         best_score = float('-inf')
         best_move = None
 
@@ -96,7 +117,10 @@ class AI_Player(Player):
           2) Expansion
           3) Simulation
           4) Backpropagation
-        Finally, selects the best child of the root.
+        
+        :param roll: Dice roll
+        :param time: Time limit for MCTS
+        :return: Best move as a list of (from_pos, to_pos)
         """
         
         # Pick the best move from children of root, e.g., highest evaluation
@@ -107,19 +131,22 @@ class AI_Player(Player):
             best_move = best_child.get_last_move()
 
         if best_move:
-            print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_child.wins}")
+            if DEBUG_MODE:
+                print(f"MCTS AI ({self.color}) executed moves: {best_move} with score: {best_child.wins}")
             return best_move
         else: 
-            print("No valid moves available for AI.")
+            if DEBUG_MODE:
+                print("No valid moves available for AI.")
             return []
             
     def UCT_search(self, node: BoardNode, roll: list, time_lim = AI_TURN_TIME):
-        """ 
-        Repeatedly run MCTS iterations until we run out of time, keeping track of the best move found.
-        :param root_node: The initial MCTS node to search from.
-        :param roll: The dice roll (if your logic needs it).
-        :param time_limit_seconds: How long (in seconds) to run the search.
-        :return: The best move found, or None if no move could be found.
+        """
+        Run multiple MCTS iterations until time is up, then pick the best child of the root.
+
+        :param node: Root node of the MCTS tree
+        :param roll: Dice roll for the first expansion (optional)
+        :param time_lim: Time limit in seconds
+        :return: The best child node based on UCB
         """
 
         end_time = time.time() + time_lim
@@ -133,12 +160,14 @@ class AI_Player(Player):
 
     def mcts_select(self, node: BoardNode, roll: list = None)-> BoardNode:
         """
-        Navigate down the tree (e.g. using UCB) until we reach a node that can be expanded
-        or is a terminal state.
+        Descend the tree using UCB until we find a node to expand or we reach a terminal node.
+
+        :param node: Current node
+        :param roll: Dice roll for expansion (may be None)
+        :return: The node we ended on
         """
         current_node = node
         
-        # Keep selecting moves while the node is valid and not a terminal state
         while current_node is not None and not current_node.is_terminal():
             gen_all = True
             if roll is None:
@@ -157,7 +186,6 @@ class AI_Player(Player):
                 if child_node is None:
                     break
                 
-                # Return the new child immediately after expansion
                 return child_node
             
             # Otherwise, if the node is fully expanded, we pick a child to explore
@@ -175,7 +203,11 @@ class AI_Player(Player):
     
     def mcts_expand_all_moves(self, node, roll):
         """
-        Generate and add all possible child nodes for the current state.
+        Expand by generating all possible child states from the current node.
+
+        :param node: Current node
+        :param roll: Dice roll
+        :return: The child node with the best UCB, or node if no expansions
         """
         if node.is_fully_expanded(roll):
             return node
@@ -214,9 +246,7 @@ class AI_Player(Player):
             return node # No valid moves available
         
         #get the last moves of the children
-        last_moves = []
-        for child in node.children:
-            last_moves.append(child.get_last_move())
+        last_moves = [child.get_last_move() for child in node.children]
 
         for move in all_moves:
             if move not in last_moves:
@@ -255,10 +285,9 @@ class AI_Player(Player):
 
     def random_play(self, roll: list) -> list:
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
-        if all_moves:
-            return all_moves[0]
-        else:
-            return []
+        rnd_indx = random.randint(0, len(all_moves) - 1) if all_moves else 0
+        return all_moves[rnd_indx] if all_moves else []
+
         
     def heuristic_play(self, roll: list) -> list:
         '''
@@ -268,24 +297,51 @@ class AI_Player(Player):
         best_move, best_score = self.choose_heuristic_best_move(all_moves)
 
         if best_move:
-            print(f"AI ({self.color}) executed moves: {best_move} with score: {best_score}")
+            if DEBUG_MODE:
+                print(f"AI ({self.color}) executed moves: {best_move} with score: {best_score}")
             return best_move
         else:
-            print("No valid moves available for AI.")
+            if DEBUG_MODE:
+                print("No valid moves available for AI.")
             return []
         
-    def choose_heuristic_best_move(self, all_moves):
+    def choose_heuristic_best_move(self, all_moves, moves_size=1):
         best_score = float('-inf') if self.color == WHITE else float('inf')
         best_move = None
+        color_param = 1 if self.color == WHITE else -1
 
         for moves in all_moves:
             new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
             score = evaluate_position(new_board, self.ratios)
-            if (self.color == WHITE and score > best_score) or (self.color == BLACK and score < best_score):
+            if color_param * score > color_param * best_score:
                 best_score = score
                 best_move = moves
 
         return best_move, best_score
+    
+    def choose_heuristic_top_moves(self, all_moves, top_x=1):
+        """
+        Returns the top X moves (along with their scores) based on a heuristic evaluation.
+        Sorts moves in descending order for WHITE, ascending for BLACK.
+
+        :param all_moves: All possible move sequences
+        :param top_x: How many moves to return in the sorted list
+        :return: A list of tuples [(move_sequence, score), ...] of size up to top_x
+        """
+        scored_moves = []
+        for move_seq in all_moves:
+            new_board = self.simulate_moves(copy.deepcopy(self.board), move_seq, current_color=self.color)
+            score = evaluate_position(new_board, self.ratios)
+            scored_moves.append((move_seq, score))
+
+        # If White, we sort descending by score. If Black, ascending.
+        if self.color == WHITE:
+            scored_moves.sort(key=lambda x: x[1], reverse=True)
+        else:
+            scored_moves.sort(key=lambda x: x[1])
+
+        # Return up to top_x best
+        return scored_moves[:top_x]
 
     
     def strategic_play(self) -> list:

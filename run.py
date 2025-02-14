@@ -2,7 +2,7 @@ import sys
 import msvcrt
 from tkinter import Tk
 from GUI import BackgammonGameGUI  # Adjust import to match your file structure
-
+from Constants import ONE_RUN, AI, HUMAN, MIN_MAX_AI, MCTS_AI
 # Example ratio dictionaries
 ratios1 = {
     "prime_structure": 1,
@@ -54,7 +54,7 @@ players_human_vs_human = ["Human", "Human"]
 players_human_vs_ai = ["Human", "AI"]
 players_ai_vs_human = ["AI", "Human"]
 players_ai_vs_ai = ["AI", "AI"]
-players_ai_vs_ai_net = [["AI",ratios1,"HeuristicNet_copy.pth"], "AI"]
+players_ai_vs_ai_net = ["AI", ["AI",ratios1,"HeuristicNet_copy1.pth"]]
 
 
 # Multiple AIs with different ratio settings
@@ -68,9 +68,6 @@ players_different_ratios = [
 
 game_count = 0
 
-# Set this to True if you want a GUI for all games, False to skip GUI entirely.
-USE_GUI_FOR_ALL_GAMES = True
-ONE_RUN= not True
 # Define player settings here, e.g. AI vs AI
 players_to_use = players_ai_vs_ai
 

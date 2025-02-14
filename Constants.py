@@ -2,11 +2,11 @@
 DEBUG_MODE = not True # Set to True to enable debug mode
 SAFE_TEST = False # Set to True to test AI without initializing pieces from board
 NETWORK_TRAINING = True # Set to True to train the neural network
+ONE_RUN = False # Set to True to run only one game
 
 # Game parameters
 WHITE = "white"
 BLACK = "black"
-
 
 # Player types
 AI = "AI"
@@ -19,13 +19,16 @@ HUMAN = "Human"
 # Game parameters
 START_BOARD = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0]
 
-CHOSEN_EVAL_METHOD = 4 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max), 4 for neural network
+CHOSEN_EVAL_METHOD = 4 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max), 4 for neural network, 5 for random
 TURN_TIME = 1000  # Default turn time limit in seconds
 AI_DELAY = 0  # Delay between AI moves in milliseconds
 
-
 # Neural network parameters
-PATH = "HeuristicNet.pth"
+PATH = "HeuristicNets/newformat13.02.pth"
+LEARNING_RATE = 0.001
+EPOCHS_NUM = 20
+BOARD_SIZE = 28  # Board format length
+NUM_SAMPLES = 500 # Number of samples to generate for training
 
 # Min-max parameters
 MIN_MAX_DEPTH = 1  # Default depth for min-max search
