@@ -294,7 +294,7 @@ class BackgammonGameGUI:
         position = self.selected
         current_player = self.current_player()
 
-        if not current_player.is_piece_at_position(position, current_player.color):
+        if not current_player.is_piece_at_position(position, self.board, current_player.color):
             self.title.set("That's an invalid piece to pick")
             return
         self.title.set('Choose a position to move it to (right click)')
@@ -452,6 +452,7 @@ class BackgammonGameGUI:
                 self.current_player().move_piece(from_pos, to_pos, computer_roll)
                 self.update_and_render_board()
                 self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
+                
         if DEBUG_MODE:
             print(f"Ended AI ({self.turn}) turn")
         self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
