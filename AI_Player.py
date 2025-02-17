@@ -60,7 +60,7 @@ class AI_Player(Player):
                 evaluate_position(self.board, self.ratios),
                 self.color
             )
-            self.gen_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
+            self.generate_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
             return self.strategic_play()
         elif CHOSEN_EVAL_METHOD == 4:
             return self.neural_play(roll)  # Default to neural evaluation
@@ -96,19 +96,19 @@ class AI_Player(Player):
             return []
         
     def choose_neural_best_move(self, all_moves):
-        turn = 1 if self.color == WHITE else -1
         best_score = float('-inf')
         best_move = None
 
         for moves in all_moves:
             new_board = self.simulate_moves(copy.deepcopy(self.board), moves, current_color=self.color)
-            score = neural_eval(new_board, turn, self.model_path)
+            score = neural_eval(new_board, self.color , self.model_path)
             if score == 1.0: #best possible score
                 return moves, score
             if score > best_score:
                 best_score = score
                 best_move = moves
-        return best_move, best_score    
+        return best_move, best_score
+    
     def mcts_play(self, roll: list, time = AI_TURN_TIME) -> list:
         """
         Executes a move using an MCTS-based approach. 
@@ -287,8 +287,7 @@ class AI_Player(Player):
         all_moves = self.generate_all_moves(self.board, roll, current_color=self.color)
         rnd_indx = random.randint(0, len(all_moves) - 1) if all_moves else 0
         return all_moves[rnd_indx] if all_moves else []
-
-        
+     
     def heuristic_play(self, roll: list) -> list:
         '''
         Get the best move best on possible boards heuristic evaluation.
@@ -343,7 +342,6 @@ class AI_Player(Player):
         # Return up to top_x best
         return scored_moves[:top_x]
 
-    
     def strategic_play(self) -> list:
         current_node = self.board_tree.root
         best_child = current_node.get_best_evaluation_child()
@@ -358,7 +356,7 @@ class AI_Player(Player):
             print("No valid moves available for Strategic AI.")
             return []
 
-    def gen_minmax_tree(self, node: BoardNode, depth: int, current_roll=None):
+    def generate_minmax_tree(self, node: BoardNode, depth: int, current_roll=None):
         if depth == 0:
             node.evaluation = evaluate_position(node.board, self.ratios)
             return node.evaluation
@@ -366,7 +364,7 @@ class AI_Player(Player):
         if current_roll is not None:
             rolls_to_use = [current_roll]
         else:
-            rolls_to_use = self.get_possible_rolls()
+            rolls_to_use = self.generate_all_possible_rolls()
 
         next_player_turn = self.get_next_player(node.player_turn)
 
@@ -380,7 +378,7 @@ class AI_Player(Player):
                     next_player_turn
                 )
                 node.add_child(new_node)
-                self.gen_minmax_tree(new_node, depth - 1, None)
+                self.generate_minmax_tree(new_node, depth - 1, None)
             else:
                 for moves in all_moves:
                     child_board = copy.deepcopy(node.board)
@@ -394,7 +392,7 @@ class AI_Player(Player):
                     )
                     node.add_child(child_node)
 
-                    self.gen_minmax_tree(child_node, depth - 1, None)
+                    self.generate_minmax_tree(child_node, depth - 1, None)
 
         if node.children:
             total = sum(child.evaluation for child in node.children)
@@ -408,7 +406,7 @@ class AI_Player(Player):
         else:
             return [i, j]
         
-    def get_possible_rolls(self) -> list:
+    def generate_all_possible_rolls(self) -> list:
         """
         Generate all unique dice roll combinations.
         :return: A list of unique dice roll combinations.
@@ -467,21 +465,19 @@ class AI_Player(Player):
             all_moves.append(move_sequence)
 
     def generate_valid_moves(self, roll_values: list, board: list, current_color: str) -> list:
-        moves = []
-        captured_position = get_captured_position(current_color)
-
-        if self.captured_piece_on_board(board, current_color):
-            from_positions = [captured_position]
+        if self.has_captured_piece(board, current_color):
+            from_positions = [get_captured_position(current_color)]
         else:
             from_positions = [
                 i for i in range(24)
-                if self.is_piece_at_position_on_board(i, board, current_color)
+                if self.is_piece_at_position(i, board, current_color)
             ]
 
+        moves = []
         for from_pos in from_positions:
             for die in roll_values:
                 to_pos = self.calculate_target_position(from_pos, die, current_color)
-                if self.valid_move_with_board(from_pos, to_pos, [die], board, current_color):
+                if self.valid_move(from_pos, to_pos, [die], board, current_color, simulate=True):
                     moves.append((from_pos, to_pos))
         return moves
 
@@ -497,132 +493,16 @@ class AI_Player(Player):
             current_color = self.color
         from_pos, to_pos = move
 
-        if self.is_piece_at_position_on_board(from_pos, board, current_color):
-            self.remove_piece_from_board(board, from_pos, current_color)
+        #remove the piece from the starting position
+        if self.is_piece_at_position(from_pos, board, current_color):
+            self.remove_piece(from_pos, board, current_color)
         else:
             print(f"No piece at position {from_pos} to move for {current_color}")
             return board
 
-        if self.is_opponent_piece_at_position_on_board(to_pos, board, current_color):
-            self.capture_opponent_piece(board, to_pos, current_color)
+        #capture opponent piece if necessary
+        self.capture_piece_at_position(to_pos, board, current_color, simulate = True)
 
-        self.add_piece_to_board(board, to_pos, current_color)
+        #add the piece to the target position
+        self.add_piece(to_pos, board, current_color)
         return board
-
-    def valid_move_with_board(self, from_pos, to_pos, roll_values, board, current_color) -> bool:
-        # Validate the move based on the board state
-        if self.is_blocked_on_board(to_pos, board, current_color):
-            return False
-        if not self.is_piece_at_position_on_board(from_pos, board, current_color):
-            return False
-        
-        roll_values = [int(value) for value in roll_values]
-
-        if from_pos == get_captured_position(current_color):
-            move_distance = None
-            for die_value in roll_values:
-                expected_to_pos = die_value - 1 if current_color == WHITE else 24 - die_value
-                if expected_to_pos == to_pos:
-                    move_distance = die_value
-                    break
-            if move_distance is None:
-                return False
-            
-        elif to_pos == get_escaped_position(current_color):
-            if not self.all_pieces_in_home_board(board, current_color):
-                return False
-            if not self.can_bear_off_from_position(from_pos, board, current_color):
-                return False
-            if not any(die >= from_pos + 1 for die in roll_values) and current_color == BLACK:
-                return False
-            if not any(die >= 24 - from_pos for die in roll_values) and current_color == WHITE:
-                return False
-            
-        else:
-            move_distance = to_pos - from_pos if current_color == WHITE else from_pos - to_pos
-
-            if move_distance <= 0:
-                return False
-            
-        return True
-
-    def can_bear_off_from_position(self, position, board, current_color):
-        if current_color == WHITE:
-            for pos in range(18, position):
-                if board[pos] > 0:
-                    return False
-        else:
-            for pos in range(5, position, -1):
-                if board[pos] < 0:
-                    return False
-        return True
-
-    def is_blocked_on_board(self, position, board, current_color):
-        if position < 0 or position > 23:
-            return False
-        occupant_count = board[position]
-        # Determine the opponent color
-        opp_color = WHITE if current_color == BLACK else BLACK
-        if opp_color == WHITE:
-            return occupant_count >= 2
-        else:
-            return occupant_count <= -2
-
-    def all_pieces_in_home_board(self, board, current_color):
-        if current_color == WHITE:
-            for pos in range(24):
-                if board[pos] > 0 and pos < 18:
-                    return False
-        else:
-            for pos in range(24):
-                if board[pos] < 0 and pos > 5:
-                    return False
-        return True
-
-    def is_opponent_piece_at_position_on_board(self, position, board, current_color):
-        if position < 0 or position > 23:
-            return False
-        
-        occupant_count = board[position]
-        return occupant_count < 0 if current_color == WHITE else occupant_count > 0
-
-    def capture_opponent_piece(self, board, position, current_color):
-        opp_color = WHITE if current_color == BLACK else BLACK
-        self.remove_piece_from_board(board, position, opp_color)
-        board[get_captured_position(opp_color)] += 1
-
-    def add_piece_to_board(self, board, position, current_color):
-        if 0 <= position <= 23:
-            if current_color == WHITE:
-                board[position] += 1
-            else:
-                board[position] -= 1
-        else:
-            board[position] += 1  # bearing off or captured
-
-    def remove_piece_from_board(self, board, position, current_color):
-        if 0 <= position <= 23:
-            if current_color == WHITE:
-                board[position] -= 1
-            else:
-                board[position] += 1
-        else:
-            board[position] -= 1  # bearing off or captured
-
-    def captured_piece_on_board(self, board, color):
-        return board[get_captured_position(color)] > 0
-
-    def is_piece_at_position_on_board(self, position, board, color = None):
-        if color is None:
-            color = self.color
-
-        if position < 0 or position > 23:
-            return board[position] > 0
-        else:
-            return board[position] > 0 if color == WHITE else board[position] < 0
-        
-    def win_on_board(self, board, color=None):
-        if color is None:
-            color = self.color
-
-        return board[get_escaped_position(color)] == 15

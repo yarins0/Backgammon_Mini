@@ -289,7 +289,7 @@ def win_based_evaluation(board, winner):
     # down to loser_remaining = 0 => original "score" from above (score ∈ [0,1]).
     # If loser_remaining=1 => ~0.55 => we place that in between linearly.
     high_br, high_val = 15, 1.0
-    low_br, low_val = 1, 0.55  # original 'score' is baseline if loser pieces left=1
+    low_br, low_val = 1, 0.51  # original 'score' is baseline if loser pieces left=1
 
     ratio = (loser_remaining - low_br) / float(high_br - low_br)
 
