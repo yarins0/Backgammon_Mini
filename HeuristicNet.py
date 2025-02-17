@@ -211,17 +211,17 @@ def iter_training():
     print(f"Model saved to {PATH}!")
     print("Training complete!")
 
-def neural_eval(board, turn=1, model_path=PATH):
+def neural_eval(board, color, model_path=PATH):
     """
     Evaluate a board configuration using a trained model.
 
     Args:
         board (list): The board configuration (length is BOARD_SIZE).
         model_path (str): Path to the trained model.
-        turn (int): 0 indicates White, 1 indicates Black.
+        turn (int): 1 indicates White, -1 indicates Black.
 
     Returns:
-        float: The evaluation score between 0 and 1 (favoring White as score approaches 1).
+        float: The evaluation score between 0 and 1 (favoring the player as score approaches 1).
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = HeuristicNet(BOARD_SIZE).to(device)
@@ -229,7 +229,7 @@ def neural_eval(board, turn=1, model_path=PATH):
     model.eval()
 
     with torch.no_grad():
-        x = torch.tensor(board + [turn], dtype=torch.float32, device=device)
+        x = torch.tensor(board + [1 if color == WHITE else -1], dtype=torch.float32, device=device)
         x = x.unsqueeze(0)  # Add batch dimension
         prediction = model(x)
     return prediction.item()
