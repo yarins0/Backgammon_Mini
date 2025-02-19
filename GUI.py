@@ -39,6 +39,21 @@ class BackgammonGameGUI:
         self.black = AI_Player(BLACK, self.board, black_ratios, black_path) if black_player == AI else Human_Player(BLACK, self.board)
         self.white = AI_Player(WHITE, self.board, white_ratios, white_path) if white_player == AI else Human_Player(WHITE, self.board)
 
+    def parse_player(self, player):
+        """
+        Parse the player input to determine the type and ratios.
+        """
+        if isinstance(player, list) and len(player) == 2 and player[0] == AI:
+            return AI, player[1] , PATH  # AI with specified ratios and default path
+        elif isinstance(player, list) and len(player) == 3 and player[0] == AI:
+            return AI, player[1] ,player[2]  # AI with specified ratios and path
+        elif player == AI:
+            return AI, EVAL_DISTRIBUTION, PATH  # AI with default ratios AND PATH
+        elif player == HUMAN:
+            return HUMAN, None, None  # Human player
+        else:
+            raise ValueError("Invalid player input format")
+
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
             # Initialize the game board
@@ -69,9 +84,8 @@ class BackgammonGameGUI:
         self.update_and_render_board()
 
         # Print starting game information
-        black_type = "AI" if not self.black.is_human else "Human"
-        white_type = "AI" if not self.white.is_human else "Human"
-        print(f"Starting game between {white_type} player (white) and {black_type} player (black)")
+        print(f"Starting game between {self.white} and {self.black}")
+        self.title.set(f"Starting game between {self.white} and {self.black}")
 
         # Start the first turn with white
         self.turn = WHITE
@@ -85,21 +99,6 @@ class BackgammonGameGUI:
         if j >= i:
             j += 1
         return i, j
-
-    def parse_player(self, player):
-        """
-        Parse the player input to determine the type and ratios.
-        """
-        if isinstance(player, list) and len(player) == 2 and player[0] == AI:
-            return AI, player[1] , PATH  # AI with specified ratios and default path
-        elif isinstance(player, list) and len(player) == 3 and player[0] == AI:
-            return AI, player[1] ,player[2]  # AI with specified ratios and path
-        elif player == AI:
-            return AI, EVAL_DISTRIBUTION, PATH  # AI with default ratios AND PATH
-        elif player == HUMAN:
-            return HUMAN, None, None  # Human player
-        else:
-            raise ValueError("Invalid player input format")
 
     def clear_board(self):
         # Clear the canvas content if it exists
@@ -285,6 +284,30 @@ class BackgammonGameGUI:
                     # Handle borne-off pieces if needed
         self._canvas.update_idletasks()  # Ensure the canvas is refreshed
 
+    def AI_turn(self):
+        computer_roll = roll()
+        if DEBUG_MODE:
+            print(f"Computer roll: {computer_roll}")
+
+        current_player = self.current_player()
+
+        # Convert the dice roll to strings before joining
+        rolled = ' '.join(map(str, computer_roll))
+        self.rolls.set(rolled)
+        self.title.set(f"{current_player} rolled: {rolled}")
+
+        #try:
+        move_sequence = current_player.choose_move(self.board , computer_roll)
+        if move_sequence:
+            for move in move_sequence:
+                # Execute each move
+                from_pos, to_pos = move
+                current_player.move_piece(from_pos, to_pos, computer_roll)
+                self.update_and_render_board()
+                self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
+                
+        self.end_turn()
+
     def human_move1(self, event):
         if self.current_board_index != len(self.board_history) - 1:
             self.title.set("You can only make moves on the latest board state.")
@@ -298,6 +321,7 @@ class BackgammonGameGUI:
             self.title.set("That's an invalid piece to pick")
             return
         self.title.set('Choose a position to move it to (right click)')
+
     def human_move2(self, event):
         if self.current_board_index != len(self.board_history) - 1:
             self.title.set("You can only make moves on the latest board state.")
@@ -324,12 +348,12 @@ class BackgammonGameGUI:
 
 
         if not self.rolls.get():
-            print(f"Ended human ({self.turn}) turn")
             self.selected = None
             self.destination = None
             self.end_turn()
         else:
             self.title.set('Choose a piece to move')
+
     def select(self, event):
         x = event.x // TRI_WIDTH
         y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
@@ -348,6 +372,7 @@ class BackgammonGameGUI:
             if self.selected == 24: # Black captured pieces
                 self.selected = 25
         #print(f"Source selected: {self.selected} (x={x}, y={y})")
+
     def goto(self, event):
         x = event.x // TRI_WIDTH
         y = event.y // (TRI_HEIGHT + 1)  # Adjusted for correct calculation
@@ -373,37 +398,25 @@ class BackgammonGameGUI:
 
     def other_player(self):
         return self.black if self.turn == WHITE else self.white
-    def check_win_condition(self):
-        current_player = self.current_player()
-        if current_player.win():
-            winner_color = current_player.color
-            print(f'{winner_color.capitalize()} has won the game!')
-            self.title.set(f'{winner_color.capitalize()} has won the game!')
-
-            self.rollButton.config(state=DISABLED)
-            self.endButton.config(state=DISABLED)
-            self._canvas.unbind('<Button-1>')
-            self._canvas.unbind('<Button-3>')
-            self.auto_render = False  # Stop automatic rendering
-
-            # Update scores
-            if self.current_player().color == WHITE:
-                player_idx = self.white_idx
-            else:
-                player_idx = self.black_idx
-            self.scores[player_idx] += 1
-
-            if (NETWORK_TRAINING):
-                boards_based_training(self.board_history)
-
-            # Schedule the next game after a delay or end the session
-            self.window.after(AI_DELAY, self.start_next_game())
-
-            return True
-        return False
-    def switch_turn(self):
+       
+    def prepare_turn(self):
         if DEBUG_MODE:
             print(f"{self.board}")
+        current_player = self.current_player()
+
+        if DEBUG_MODE:
+                print(f"{current_player} turn started")
+
+        if current_player.is_human:
+            self.title.set(f"It's the {current_player} player's turn! Roll the dice!")
+            self.rollButton.config(state=NORMAL)
+            self.endButton.config(state=NORMAL)
+        else:
+            self.rollButton.config(state=DISABLED)
+            self.endButton.config(state=DISABLED)
+            self.AI_turn()
+
+    def switch_turn(self):
         self.turn = WHITE if self.turn == BLACK else BLACK
 
     def end_turn(self):
@@ -421,41 +434,31 @@ class BackgammonGameGUI:
         self.switch_turn()
         self.prepare_turn()
 
-    def prepare_turn(self):
+    def check_win_condition(self):
         current_player = self.current_player()
+        if current_player.win():
+            print(f'{current_player} has won the game!')
+            self.title.set(f'{current_player} has won the game!')
 
-        if current_player.is_human:
-            self.title.set(f"It's the {current_player.color} player's turn! Roll the dice!")
-            self.rollButton.config(state=NORMAL)
-            self.endButton.config(state=NORMAL)
-        else:
-            if DEBUG_MODE:
-                print(f"AI ({current_player.color}) turn started")
             self.rollButton.config(state=DISABLED)
             self.endButton.config(state=DISABLED)
-            self.AI_turn()
-    def AI_turn(self):
-        computer_roll = roll()
-        if DEBUG_MODE:
-            print(f"Computer roll: {computer_roll}")
+            self._canvas.unbind('<Button-1>')
+            self._canvas.unbind('<Button-3>')
+            self.auto_render = False  # Stop automatic rendering
 
-        # Convert the dice roll to strings before joining
-        rolled = ' '.join(map(str, computer_roll))
-        self.rolls.set(rolled)
-        self.title.set(f"AI ({self.current_player().color}) rolled: {rolled}")
-        #try:
-        move_sequence = self.current_player().play(self.board , computer_roll)
-        if move_sequence:
-            for move in move_sequence:
-                # Execute each move
-                from_pos, to_pos = move
-                self.current_player().move_piece(from_pos, to_pos, computer_roll)
-                self.update_and_render_board()
-                self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
-                
-        if DEBUG_MODE:
-            print(f"Ended AI ({self.turn}) turn")
-        self.window.after(2 * AI_DELAY, self.end_turn)  # Schedule the end of the turn with a delay
+            # Update scores
+            winner_idx = self.white_idx if self.turn == WHITE else self.black_idx
+            self.scores[winner_idx] += 1
+
+            if (NETWORK_TRAINING):
+                boards_based_training(self.board_history)
+
+            # Schedule the next game after a delay or end the session
+            self.window.after(AI_DELAY, self.start_next_game())
+
+            return True
+        return False
+
     def update_and_render_board(self):
         # Update the board state and render it immediately
         self.board_history.append([self.board.copy(), self.turn])
