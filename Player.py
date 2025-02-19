@@ -120,6 +120,8 @@ class Player:
         if current_color is None:
             current_color = self.color
 
+        
+
         # Validate the move based on the board state
         if self.is_blocked(to_pos, board, current_color):
             if DEBUG_MODE and not simulate:
@@ -129,6 +131,11 @@ class Player:
             if DEBUG_MODE and not simulate:
                 print(f"There is no piece at position {from_pos}")
             return False
+        if from_pos is not get_captured_position(current_color) and self.has_captured_piece(board, current_color):
+            if DEBUG_MODE and not simulate:
+                print("You must move the captured piece first")
+            return False
+        
         
         roll_values = [int(value) for value in roll_values]
 

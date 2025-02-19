@@ -5,7 +5,7 @@ import torch.optim as optim
 import numpy as np
 import random
 from Eval_position import evaluate_position, win_based_evaluation
-from Constants import PATH, WHITE, BLACK, LEARNING_RATE, EPOCHS_NUM, BOARD_SIZE, NUM_SAMPLES
+from Constants import NETWORK_TRAINING, PATH, WHITE, BLACK, LEARNING_RATE, EPOCHS_NUM, BOARD_SIZE, NUM_SAMPLES
 
 
 # 1. Define the Neural Network
@@ -235,4 +235,5 @@ def neural_eval(board, color, model_path=PATH):
     return prediction.item()
 
 if __name__ == "__main__":
-    iter_training()
+    if not NETWORK_TRAINING:
+        iter_training()
