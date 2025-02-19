@@ -22,11 +22,6 @@ class Player:
     def is_human(self):
         return self._is_human
     
-    def play(self, board, roll, color = None, time = 0):
-        pass  # Implement the logic for playing a turn
-
-    def play_random(self, board, roll, color, time):
-        self.play(board, roll, color, time)
     def convert_board_to_pieces_array(self, board):
         pieces = []  # Reset current player pieces
         other_pieces = []  # Reset opposing player pieces
@@ -81,10 +76,12 @@ class Player:
             color = self.color
         # Check if the player has all 15 pieces borne off (escaped)
         return board[get_escaped_position(color)] == 15
+    
     def get_next_player(self , color = None):
         if color is None:
             color = self.color
         return BLACK if color == WHITE else WHITE
+    
     def move_piece(self, from_pos, to_pos, rolls):
         # Ensure rolls is a list of integers
         rolls = [int(value) for value in rolls]
@@ -120,20 +117,23 @@ class Player:
         if current_color is None:
             current_color = self.color
 
-        
-
         # Validate the move based on the board state
         if self.is_blocked(to_pos, board, current_color):
             if DEBUG_MODE and not simulate:
                 print(f"Position {to_pos} is blocked")
+                raise ValueError(f"Position {to_pos} is blocked")
             return False
         if not self.is_piece_at_position(from_pos, board, current_color):
             if DEBUG_MODE and not simulate:
                 print(f"There is no piece at position {from_pos}")
+                raise ValueError(f"There is no piece at position {from_pos}")
+
             return False
         if from_pos is not get_captured_position(current_color) and self.has_captured_piece(board, current_color):
             if DEBUG_MODE and not simulate:
                 print("You must move the captured piece first")
+                raise ValueError("You must move the captured piece first")
+
             return False
         
         
@@ -149,24 +149,31 @@ class Player:
             if move_distance is None:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from the bar to {to_pos}")
+                    raise ValueError(f"No matching die value for this move from the bar to {to_pos}")
+
                 return False
             
         elif to_pos == get_escaped_position(current_color):
             if not self.is_all_pieces_in_home(board, current_color):
                 if DEBUG_MODE and not simulate:
                     print("All pieces must be in home to bear off")
+                    raise ValueError("All pieces must be in home to bear off")
+
                 return False
             if not self.can_bear_off(from_pos, board, current_color):
                 if DEBUG_MODE and not simulate:
                     print("Cannot bear off with this die")
+                    raise ValueError("Cannot bear off with this die")
                 return False
             if not any(die >= from_pos + 1 for die in roll_values) and current_color == BLACK:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from {from_pos} to {to_pos}")
+                    raise (f"No matching die value for this move from {from_pos} to {to_pos}")
                 return False
             if not any(die >= 24 - from_pos for die in roll_values) and current_color == WHITE:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from {from_pos} to {to_pos}")
+                    raise ValueError(f"No matching die value for this move from {from_pos} to {to_pos}")
                 return False
             
         else:
@@ -175,6 +182,7 @@ class Player:
             if move_distance <= 0:
                 if DEBUG_MODE and not simulate:
                     print(f"Invalid target position {to_pos}")
+                    raise ValueError(f"Invalid target position {to_pos}")
                 return False
             
         return True
