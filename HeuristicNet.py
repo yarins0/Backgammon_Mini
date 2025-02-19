@@ -176,8 +176,7 @@ def boards_based_training(board_history):
     model = train_network(model, criterion, optimizer, generate_data_from_boards(board_history))
 
     torch.save(model.state_dict(), PATH)
-    print("Model saved!")
-    print("Training complete!")
+    print("Training complete and model saved!")
 
 # Iterations training Process
 def iter_training():
