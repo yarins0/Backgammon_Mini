@@ -24,11 +24,11 @@ TURN_TIME = 1000  # Default turn time limit in seconds
 AI_DELAY = 0  # Delay between AI moves in milliseconds
 
 # Neural network parameters
-PATH = "HeuristicNets/newformat13.02.pth"
+PATH = "HeuristicNets/newformat18.02.pth"
 LEARNING_RATE = 0.001
 EPOCHS_NUM = 20
 BOARD_SIZE = 28  # Board format length
-NUM_SAMPLES = 500 # Number of samples to generate for training
+NUM_SAMPLES = 500 # Number of samples to generate for heuristic training
 
 # Min-max parameters
 MIN_MAX_DEPTH = 1  # Default depth for min-max search
