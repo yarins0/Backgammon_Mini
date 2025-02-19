@@ -26,7 +26,10 @@ class AI_Player(Player):
         # Initialize the board tree with the current board state
         self.board_tree = BoardTree(copy.deepcopy(self.board), evaluate_position(self.board, self.ratios))
 
-    def play(self, board:list ,roll: list, current_color=None, time = AI_TURN_TIME) -> list:
+    def __str__(self) -> str:
+        return f"AI Player ({self.color})"
+
+    def choose_move(self, board:list ,roll: list, current_color=None, time = AI_TURN_TIME) -> list:
         """
         Main entry point for the AI to decide which move to make, based on CHOSEN_EVAL_METHOD.
 
