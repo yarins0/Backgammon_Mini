@@ -49,13 +49,15 @@ ratios5 = {
     "captured_pieces": 0.0
 }
 
-# A few possible player configuration examples
-players_human_vs_human = ["Human", "Human"]
-players_human_vs_ai = ["Human", "AI"]
-players_ai_vs_human = ["AI", "Human"]
-players_ai_vs_ai = ["AI", "AI"]
-players_ai_vs_ai_net = ["AI", ["AI",ratios1,"HeuristicNet_copy1.pth"]]
 
+# Player Configurations
+PLAYER_CONFIGURATIONS = {
+    "human_vs_human": ["Human", "Human"],
+    "human_vs_ai": ["Human", "AI"],
+    "ai_vs_human": ["AI", "Human"],
+    "ai_vs_ai": ["AI", "AI"],
+    "ai_vs_neural": ["AI", ["AI", ratios1, "HeuristicNet_copy1.pth"]]
+}
 
 # Multiple AIs with different ratio settings
 players_different_ratios = [
@@ -66,59 +68,50 @@ players_different_ratios = [
     ["AI", ratios5]
 ]
 
-game_count = 0
+class GameLooper:
+    def __init__(self):
+        self.game_count = 0
+        self.current_game = None
+        self.players = PLAYER_CONFIGURATIONS["ai_vs_ai"]  # Default configuration
 
-# Define player settings here, e.g. AI vs AI
-players_to_use = players_ai_vs_ai
+    def check_for_quit(self, window):
+        """Checks for 'q' key press to quit the application."""
+        if msvcrt.kbhit():
+            if msvcrt.getch().lower() == b'q':
+                print("User requested to quit. Stopping.")
+                window.destroy()
+                sys.exit(0)
+        window.after(200, lambda: self.check_for_quit(window))
 
-def check_for_quit(window):
-    """
-    Periodically checks if the user pressed 'q'. If so, stop the program.
-    Otherwise, schedule another check in 200 milliseconds.
-    """
-    if msvcrt.kbhit():
-        key_pressed = msvcrt.getch()
-        if key_pressed.lower() == b'q':
-            print("User requested to quit. Stopping.")
-            window.destroy()
-            sys.exit(0)
-    window.after(200, check_for_quit, window)
+    def launch_new_game(self, window):
+        """Creates a new game instance after cleaning up the previous one."""
+        print(f"Starting game #{self.game_count + 1}")
+        
+        # Clean up previous game
+        if self.current_game is not None:
+            for widget in window.winfo_children():
+                widget.destroy()
+        
+        # Create new game
+        self.game_count += 1
+        self.current_game = BackgammonGameGUI(window, self.players)
+        return self.current_game
 
-def launch_new_game(window, players):
-    """
-    Create a fresh BackgammonGameGUI instance. No game methods are called.
-    """
-    global game_count
-    print(f"Current game count: {game_count}")
-    game_count += 1  # Increment the count each time a new game is launched
-    BackgammonGameGUI(window, players)
-
-def loop_games(window, players):
-    """
-    Continuously launch new games without calling any methods on the game object.
-    In this example, each new instance is created about every 3 seconds.
-    """
-    launch_new_game(window, players)
-
-    if ONE_RUN:
-        # Do not schedule another game if only one game should be played
-        print("ONE_GAME flag is True; only one game will be played.")
-        return
-    
-    # Schedule the next launch
-    window.after(100, loop_games, window, players)
+    def schedule_next_game(self, window):
+        """Schedules the next game with proper cleanup."""
+        self.launch_new_game(window)
+        
+        if not ONE_RUN:
+            window.after(200, lambda: self.schedule_next_game(window))
 
 def main():
     window = Tk()
     window.title("Backgammon Game")
-
-    # Start a continuous loop of new games
-    loop_games(window, players_to_use)
-
-    # Start checking for 'q' presses to quit
-    check_for_quit(window)
-
-    # Block until the user quits
+    
+    manager = GameLooper()
+    manager.check_for_quit(window)
+    manager.schedule_next_game(window)
+    
     window.mainloop()
 
 if __name__ == "__main__":
