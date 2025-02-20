@@ -3,15 +3,15 @@ from Player import *
 from AI_Player import AI_Player
 from Human_Player import Human_Player
 from game_logic import roll
-from BoardTree import BoardTree
 from HeuristicNet import boards_based_training
 from Constants import *
 import random
 
 TRI_WIDTH = 50
 TRI_HEIGHT = 200
+
 class BackgammonGameGUI:
-    def __init__(self, window, players):
+    def __init__(self, window, players, board= START_BOARD):
         self.window = window
         self.players = players
         self.scores = [0] * len(self.players)
@@ -19,7 +19,7 @@ class BackgammonGameGUI:
         self.current_game_index = 0  # Track the current game index
 
         # Initialize the game board
-        self.board = START_BOARD.copy()
+        self.board = self.start_board = board.copy()
         
         # Initialize the first pair of players
         self.initialize_players(0, 1)
@@ -29,17 +29,18 @@ class BackgammonGameGUI:
 
         # Start the first game
         self.start_next_game()
-        return self.window.mainloop()
+
+
 
     def initialize_players(self, i, j):
-        black_player, black_ratios, black_path = self.parse_player(self.players[i])
-        white_player, white_ratios, white_path = self.parse_player(self.players[j])
+        black_player, black_ratios, black_path = self.parse_player(self.players[i], BLACK)
+        white_player, white_ratios, white_path = self.parse_player(self.players[j], WHITE)
 
         # Create player instances with the shared board
         self.black = AI_Player(BLACK, self.board, black_ratios, black_path) if black_player == AI else Human_Player(BLACK, self.board)
         self.white = AI_Player(WHITE, self.board, white_ratios, white_path) if white_player == AI else Human_Player(WHITE, self.board)
 
-    def parse_player(self, player):
+    def parse_player(self, player, color):
         """
         Parse the player input to determine the type and ratios.
         """
@@ -57,11 +58,12 @@ class BackgammonGameGUI:
     def start_next_game(self):
         if self.current_game_index < len(self.players) * (len(self.players) - 1) // 2:
             # Initialize the game board
-            self.board = START_BOARD.copy()
+            self.board = self.start_board.copy()
 
             self.black_idx, self.white_idx = self.get_player_indices(self.current_game_index)
-            self.initialize_players(self.black_idx, self.white_idx)
             self.current_game_index += 1
+
+            self.initialize_players(self.black_idx, self.white_idx)
             self.start_game()
         else:
             # All games are completed
@@ -69,15 +71,10 @@ class BackgammonGameGUI:
             print("Scores:", self.scores)
             winner_idx = self.scores.index(max(self.scores))
             winner_player = self.players[winner_idx]
-            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
-            # Print the winner's ratios
-            if winner_player[0] == AI:
-                best_ratio = winner_player[1]
-                print(f"The best ratio is: {best_ratio}")
 
+            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
             self.title.set(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
-            self.window.quit()
-            return
+
             
     def start_game(self):
         self.clear_board()
@@ -170,9 +167,9 @@ class BackgammonGameGUI:
         for space in range(12):
             color = 'white' if space % 2 != 0 else '#C19A6B'  # Alternate colors
             self._canvas.create_polygon(
-                space * TRI_WIDTH, int(self._canvas.cget('height')),
-                (space + 1) * TRI_WIDTH, int(self._canvas.cget('height')),
-                (space + 0.5) * TRI_WIDTH, int(self._canvas.cget('height')) - TRI_HEIGHT,
+                space * TRI_WIDTH, int(3 * TRI_HEIGHT),
+                (space + 1) * TRI_WIDTH, int(3 * TRI_HEIGHT),
+                (space + 0.5) * TRI_WIDTH, int(2 * TRI_HEIGHT),
                 fill=color,
                 outline='black'  # Add black frame
             )
@@ -243,7 +240,7 @@ class BackgammonGameGUI:
         if self.auto_render:
             # Render the board state
             self.render_board(self.board)
-        self._canvas.after(50, self.render)
+        self._canvas.after(50, self.render)  # Schedule the next render
 
     def render_board(self, board):
         self._canvas.delete('piece')  # Clear the existing pieces
@@ -454,7 +451,7 @@ class BackgammonGameGUI:
                 boards_based_training(self.board_history)
 
             # Schedule the next game after a delay or end the session
-            self.window.after(AI_DELAY, self.start_next_game())
+            self.window.after(AI_DELAY, self.start_next_game)
 
             return True
         return False
