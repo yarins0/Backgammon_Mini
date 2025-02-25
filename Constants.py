@@ -1,10 +1,11 @@
 # Flags and modes
 DEBUG_MODE = not True # Set to True to enable debug mode
+GUI_MODE = False # Set to True to enable GUI
 SAFE_TEST = False # Set to True to test AI without initializing pieces from board
 NETWORK_TRAINING = True # Set to True to train the neural network
 ONE_RUN = False # Set to True to run only one game
 
-# Game parameters
+# Colors parameters
 WHITE = "white"
 BLACK = "black"
 
@@ -22,6 +23,10 @@ START_BOARD = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0,
 CHOSEN_EVAL_METHOD = 4 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max), 4 for neural network, 5 for random
 TURN_TIME = 1000  # Default turn time limit in seconds
 AI_DELAY = 0  # Delay between AI moves in milliseconds
+
+# Gui parameters
+TRI_WIDTH = 50
+TRI_HEIGHT = 200
 
 # Neural network parameters
 PATH = "HeuristicNets/newformat18.02.pth"

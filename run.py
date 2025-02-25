@@ -1,7 +1,7 @@
 import sys
 import msvcrt
 from tkinter import Tk
-from GUI import BackgammonGameGUI  # Adjust import to match your file structure
+from BackgammonGameManager import BackgammonGameManager  # Adjust import to match your file structure
 from Constants import ONE_RUN, AI, HUMAN, MIN_MAX_AI, MCTS_AI
 # Example ratio dictionaries
 ratios1 = {
@@ -73,6 +73,7 @@ class GameLooper:
         self.game_count = 0
         self.current_game = None
         self.players = PLAYER_CONFIGURATIONS["ai_vs_ai"]  # Default configuration
+        #self.start_board = [0, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 1, 0, 2, 0, 0, 5, 14]
 
     def check_for_quit(self, window):
         """Checks for 'q' key press to quit the application."""
@@ -94,20 +95,18 @@ class GameLooper:
         
         # Create new game
         self.game_count += 1
-        self.current_game = BackgammonGameGUI(window, self.players)
-        return self.current_game
-
+        self.current_game = BackgammonGameManager(window, self.players)
+        return self.current_game.winner_player != None # Return True if the game is finished
+    
     def schedule_next_game(self, window):
         """Schedules the next game with proper cleanup."""
-        self.launch_new_game(window)
-        
-        if not ONE_RUN:
-            window.after(200, lambda: self.schedule_next_game(window))
+        if self.launch_new_game(window) and not ONE_RUN:
+            self.schedule_next_game(window)
+
+        window.after(200, lambda: self.schedule_next_game(window))
 
 def main():
     window = Tk()
-    window.title("Backgammon Game")
-    
     manager = GameLooper()
     manager.check_for_quit(window)
     manager.schedule_next_game(window)

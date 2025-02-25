@@ -480,7 +480,7 @@ class AI_Player(Player):
         for from_pos in from_positions:
             for die in roll_values:
                 to_pos = self.calculate_target_position(from_pos, die, current_color)
-                if self.valid_move(from_pos, to_pos, [die], board, current_color, simulate=True):
+                if self.valid_move(from_pos, to_pos, die , board, current_color, simulate=True):
                     moves.append((from_pos, to_pos))
         return moves
 

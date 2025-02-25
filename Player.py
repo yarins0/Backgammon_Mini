@@ -1,9 +1,6 @@
-from typing import List
-from BoardTree import BoardTree
 from Constants import *
 
 class Player:
-
     def __init__(self, 
                  color, 
                  board = START_BOARD, 
@@ -82,23 +79,23 @@ class Player:
             color = self.color
         return BLACK if color == WHITE else WHITE
     
-    def move_piece(self, from_pos, to_pos, rolls):
-        # Ensure rolls is a list of integers
-        rolls = [int(value) for value in rolls]
-
+    def get_captured_position(self, color=None):
+        if color is None:
+            color = self.color
+        return get_captured_position(color)
+    
+    def get_escaped_position(self, color=None):
+        if color is None:
+            color = self.color
+        return get_escaped_position(color)
+    
+    def move_piece(self, from_pos, to_pos, dice, simulate=False):
+        """
+        Move a piece from 'from_pos' to 'to_pos' with 'dice'.
+        """
         # Validate the move
-        if not self.valid_move(from_pos, to_pos, rolls):
-            raise ValueError('That is an invalid place to move your piece')
-
-        # Determine the die value used for this move
-        used_die_value = None
-        for die in rolls:
-            if self.is_move_distance_valid(from_pos, to_pos, die):
-                used_die_value = die
-                break
-
-        if used_die_value is None:
-            raise ValueError('No matching die value for this move')
+        if not self.valid_move(from_pos, to_pos, dice, simulate=simulate):
+            return None
 
         # Handle capturing opponent's pieces before moving
         self.capture_piece_at_position(to_pos)
@@ -109,80 +106,73 @@ class Player:
 
         #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
         # Optionally return the used die value
-        return used_die_value
+        return dice
             
-    def valid_move(self, from_pos, to_pos, roll_values, board = None, current_color = None, simulate = False) -> bool:
+    def valid_move(self, from_pos, to_pos, roll_value, board = None, current_color = None, simulate = False) -> bool:
+        if from_pos == None or to_pos==None or not roll_value:
+            return False
         if board is None:
             board = self.board
         if current_color is None:
             current_color = self.color
 
-        # Validate the move based on the board state
         if self.is_blocked(to_pos, board, current_color):
             if DEBUG_MODE and not simulate:
                 print(f"Position {to_pos} is blocked")
                 raise ValueError(f"Position {to_pos} is blocked")
             return False
+        
         if not self.is_piece_at_position(from_pos, board, current_color):
             if DEBUG_MODE and not simulate:
                 print(f"There is no piece at position {from_pos}")
                 raise ValueError(f"There is no piece at position {from_pos}")
-
             return False
+        
         if from_pos is not get_captured_position(current_color) and self.has_captured_piece(board, current_color):
             if DEBUG_MODE and not simulate:
                 print("You must move the captured piece first")
                 raise ValueError("You must move the captured piece first")
-
             return False
         
-        
-        roll_values = [int(value) for value in roll_values]
-
+                
         if from_pos == get_captured_position(current_color):
-            move_distance = None
-            for die_value in roll_values:
-                expected_to_pos = die_value - 1 if current_color == WHITE else 24 - die_value
-                if expected_to_pos == to_pos:
-                    move_distance = die_value
-                    break
-            if move_distance is None:
+            expected_to_pos = roll_value - 1 if current_color == WHITE else 24 - roll_value
+            if expected_to_pos != to_pos:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from the bar to {to_pos}")
                     raise ValueError(f"No matching die value for this move from the bar to {to_pos}")
-
                 return False
-            
+        
         elif to_pos == get_escaped_position(current_color):
             if not self.is_all_pieces_in_home(board, current_color):
                 if DEBUG_MODE and not simulate:
                     print("All pieces must be in home to bear off")
                     raise ValueError("All pieces must be in home to bear off")
-
                 return False
-            if not self.can_bear_off(from_pos, board, current_color):
-                if DEBUG_MODE and not simulate:
-                    print("Cannot bear off with this die")
-                    raise ValueError("Cannot bear off with this die")
-                return False
-            if not any(die >= from_pos + 1 for die in roll_values) and current_color == BLACK:
+            if not (roll_value >= from_pos + 1) and current_color == BLACK:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from {from_pos} to {to_pos}")
-                    raise (f"No matching die value for this move from {from_pos} to {to_pos}")
+                    raise ValueError(f"No matching die value for this move from {from_pos} to {to_pos}")
                 return False
-            if not any(die >= 24 - from_pos for die in roll_values) and current_color == WHITE:
+            if not (roll_value >= 24 - from_pos) and current_color == WHITE:
                 if DEBUG_MODE and not simulate:
                     print(f"No matching die value for this move from {from_pos} to {to_pos}")
                     raise ValueError(f"No matching die value for this move from {from_pos} to {to_pos}")
                 return False
             
+            move_distance = 24 - from_pos if current_color == WHITE else from_pos + 1
+            if move_distance != roll_value and not self.can_bear_off(from_pos, board, current_color):
+                if DEBUG_MODE and not simulate:
+                    print("Cannot bear off with this die")
+                    raise ValueError("Cannot bear off with this die")
+                return False
+            
         else:
             move_distance = to_pos - from_pos if current_color == WHITE else from_pos - to_pos
-
-            if move_distance <= 0:
+            if move_distance != roll_value:
                 if DEBUG_MODE and not simulate:
-                    print(f"Invalid target position {to_pos}")
-                    raise ValueError(f"Invalid target position {to_pos}")
+                    print(f"Cannot move piece from {from_pos} to {to_pos}")
+                    raise ValueError(f"Cannot move piece from {from_pos} to {to_pos}")
                 return False
             
         return True
@@ -376,8 +366,6 @@ def get_captured_position(color=None):
     Return the captured (bar) position for the given color.
     If color is not provided, defaults to self.color.
     """
-    if color is None:
-        color = color
     return 24 if color == WHITE else 25
 
 def get_escaped_position(color=None):
@@ -385,6 +373,4 @@ def get_escaped_position(color=None):
     Return the escaped (borne off) position for the given color.
     If color is not provided, defaults to self.color.
     """
-    if color is None:
-        color = color
     return 26 if color == WHITE else 27
