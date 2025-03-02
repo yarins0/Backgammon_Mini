@@ -1,7 +1,9 @@
-from tkinter import *
-from Player import *
-from AI_Player import *
+from Heuristic_Player import Heuristic_Player
+from MCTS_Player import MCTS_Player
+from Min_Max_Player import Min_Max_Player
+from Neural_Player import Neural_Player
 from Human_Player import Human_Player
+from Random_Player import Random_Player
 from HeuristicNet import boards_based_training
 from GUI import BackgammonGameGUI
 from Constants import *
@@ -29,25 +31,37 @@ class BackgammonGameManager:
 
 
     def initialize_players(self, i, j):
-        black_player, black_ratios, black_path = self.parse_player(self.players[i], BLACK)
-        white_player, white_ratios, white_path = self.parse_player(self.players[j], WHITE)
-
         # Create player instances with the shared board
-        self.black = AI_Player(BLACK, self.board, black_ratios, black_path) if black_player == AI else Human_Player(BLACK, self.board)
-        self.white = AI_Player(WHITE, self.board, white_ratios, white_path) if white_player == AI else Human_Player(WHITE, self.board)
+        self.white = self.parse_player(self.players[j], WHITE)
+        self.black = self.parse_player(self.players[i], BLACK)
 
     def parse_player(self, player, color):
         """
         Parse the player input to determine the type and ratios.
         """
-        if isinstance(player, list) and len(player) == 2 and player[0] == AI:
-            return AI, player[1] , PATH  # AI with specified ratios and default path
-        elif isinstance(player, list) and len(player) == 3 and player[0] == AI:
-            return AI, player[1] ,player[2]  # AI with specified ratios and path
-        elif player == AI:
-            return AI, EVAL_DISTRIBUTION, PATH  # AI with default ratios AND PATH
-        elif player == HUMAN:
-            return HUMAN, None, None  # Human player
+        if player == HUMAN:
+            return Human_Player(color) # Human player
+        elif player == RAND_AI:
+            return Random_Player(color)  # Random AI player
+        elif player == HEUR_AI:
+            return Heuristic_Player(color)
+        elif player == MIN_MAX_AI:
+            return Min_Max_Player(color)
+        elif player == MCTS_AI:
+            return MCTS_Player(color)
+        elif player == NEURAL_AI:
+            return Neural_Player(color)
+        elif isinstance(player, list):
+            if player[0] == HEUR_AI:
+                return Heuristic_Player(color, ratios=player[1])
+            elif player[0] == NEURAL_AI:
+                return Neural_Player(color, model_path=player[1])
+            elif player[0] == MCTS_AI:
+                return MCTS_Player(color, ratios=player[1], c=player[2])
+            elif player[0] == MIN_MAX_AI:
+                return Min_Max_Player(color, ratios=player[1], depth=player[2])
+            else:
+                raise ValueError("Invalid player input format")
         else:
             raise ValueError("Invalid player input format")
 
