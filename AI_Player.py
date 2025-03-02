@@ -1,6 +1,5 @@
 from Player import *
 from Constants import *
-from Eval_position import evaluate_position
 import copy
 
 class AI_Player(Player):
@@ -28,36 +27,7 @@ class AI_Player(Player):
         :param time: Time limit for AI moves (used by MCTS)
         :return: List of (from_pos, to_pos) moves decided by AI
         """
-        #self.pieces, self.other_pieces = self.convert_board_to_pieces_array(self.board)
-        self.board = board
-        if current_color is None:
-            current_color = self.color
 
-        if CHOSEN_EVAL_METHOD == 1:
-            return self.heuristic_play(roll)
-        elif CHOSEN_EVAL_METHOD == 2:
-            # Reset the tree in preparation for MCTS
-            self.board_tree.reset_tree(
-                self.board,
-                evaluate_position(self.board, self.ratios),
-                self.color
-            )
-            # Run MCTS to pick a move
-            return self.mcts_play(roll, time)
-        
-        elif CHOSEN_EVAL_METHOD == 3:
-            # Strategic (minimax) approach
-            self.board_tree.reset_tree(
-                copy.deepcopy(self.board),
-                evaluate_position(self.board, self.ratios),
-                self.color
-            )
-            self.generate_minmax_tree(self.board_tree.root, MIN_MAX_DEPTH, current_roll=roll)
-            return self.strategic_play()
-        elif CHOSEN_EVAL_METHOD == 4:
-            return self.neural_play(roll)  # Default to neural evaluation
-        else:
-            return self.random_play(roll) # Default to random play
         
         #for turnaments in anni platform:
         #if executed_moves:
