@@ -20,7 +20,6 @@ HUMAN = "Human"
 # Game parameters
 START_BOARD = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0]
 
-CHOSEN_EVAL_METHOD = 4 # Choose 1 for heuristic, 2 for MCTS, 3 for strategic (min max), 4 for neural network, 5 for random
 TURN_TIME = 1000  # Default turn time limit in seconds
 AI_DELAY = 0  # Delay between AI moves in milliseconds
 
