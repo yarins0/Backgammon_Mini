@@ -100,9 +100,11 @@ class GameLooper:
     
     def schedule_next_game(self, window):
         """Schedules the next game with proper cleanup."""
-        if self.launch_new_game(window) and not ONE_RUN:
+        if ONE_RUN and self.game_count > 0:
+            print("ONE_RUN is set to True. Exiting.")
+            return
+        if self.launch_new_game(window):
             self.schedule_next_game(window)
-
         window.after(200, lambda: self.schedule_next_game(window))
 
 def main():
