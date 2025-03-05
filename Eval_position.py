@@ -1,6 +1,6 @@
 
 from Constants import BLACK, EVAL_DISTRIBUTION, WHITE
-from Player import get_escaped_position
+from Players.Player import get_escaped_position
 
 
 def evaluate_position(board, ratios=EVAL_DISTRIBUTION):

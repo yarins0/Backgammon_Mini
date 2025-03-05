@@ -1,5 +1,5 @@
 from Constants import *
-from AI_Player import AI_Player
+from Players.AI_Player import AI_Player
 from HeuristicNet import neural_eval
 import copy
 

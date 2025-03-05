@@ -1,9 +1,9 @@
-from Heuristic_Player import Heuristic_Player
-from MCTS_Player import MCTS_Player
-from Min_Max_Player import Min_Max_Player
-from Neural_Player import Neural_Player
-from Human_Player import Human_Player
-from Random_Player import Random_Player
+from Players.Heuristic_Player import Heuristic_Player
+from Players.MCTS_Player import MCTS_Player
+from Players.Min_Max_Player import Min_Max_Player
+from Players.Neural_Player import Neural_Player
+from Players.Human_Player import Human_Player
+from Players.Random_Player import Random_Player
 from HeuristicNet import boards_based_training
 from GUI import BackgammonGameGUI
 from Constants import *
@@ -32,8 +32,8 @@ class BackgammonGameManager:
 
     def initialize_players(self, i, j):
         # Create player instances with the shared board
-        self.white = self.parse_player(self.players[j], WHITE)
         self.black = self.parse_player(self.players[i], BLACK)
+        self.white = self.parse_player(self.players[j], WHITE)
 
     def parse_player(self, player, color):
         """
@@ -102,14 +102,13 @@ class BackgammonGameManager:
         self.prepare_turn()
 
     def get_player_indices(self, game_index):
-        # Calculate player indices for the current game
+        # Calculate player indices for the current game using round-robin scheduling
         num_players = len(self.players)
-        i = game_index // (num_players - 1)
-        j = game_index % (num_players - 1)
-        if j >= i:
-            j += 1
+        i = game_index % num_players
+        j = (game_index + i) % num_players
+        if i == j:
+            j = (j + 1) % num_players
         return i, j
-
 
     def roll(self):
         """Handles the dice roll for a human player and starts the turn timer."""
