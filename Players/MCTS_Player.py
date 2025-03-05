@@ -1,11 +1,11 @@
 
 import random
 import time
+import copy
 from Constants import *
-from AI_Player import AI_Player
+from Players.AI_Player import AI_Player
 from Eval_position import evaluate_position
 from BoardTree import *
-import copy
 
 class MCTS_Player(AI_Player):
     def __init__(self, color: str = WHITE, board= START_BOARD, ratios= EVAL_DISTRIBUTION, c= MCTS_C):

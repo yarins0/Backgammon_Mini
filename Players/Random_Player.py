@@ -1,6 +1,6 @@
 import random
 from Constants import *
-from AI_Player import AI_Player
+from Players.AI_Player import AI_Player
 class Random_Player(AI_Player):
     def __init__(self, color: str = WHITE, board= START_BOARD):
         """
