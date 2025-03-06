@@ -16,6 +16,7 @@ class BackgammonGameManager:
         self.scores = [0] * len(self.players)
         self.current_game_index = 0  # Track the current game index
         self.winner_player = None
+        self.winner_idx = None
 
         # Initialize the game board
         self.board = self.start_board = board.copy()
@@ -79,11 +80,11 @@ class BackgammonGameManager:
             # All games are completed
             print("All games completed.")
             print("Scores:", self.scores)
-            winner_idx = self.scores.index(max(self.scores))
-            self.winner_player = self.players[winner_idx]
+            self.winner_idx = self.scores.index(max(self.scores))
+            self.winner_player = self.players[self.winner_idx]
 
-            print(f"Overall winner: Player {winner_idx} with {self.scores[winner_idx]} wins")
-            self.gui.set_title(f"Overall winner: Player {winner_idx + 1} with {self.scores[winner_idx]} wins")
+            print(f"Overall winner: Player {self.winner_idx} with {self.scores[self.winner_idx]} wins")
+            self.gui.set_title(f"Overall winner: Player {self.winner_idx + 1} with {self.scores[self.winner_idx]} wins")
          
     def start_game(self):
         # Reset the board history and clear the board
@@ -233,10 +234,9 @@ class BackgammonGameManager:
             print(f'{current_player} has won the game!')
             self.gui.set_title(f'{current_player} has won the game!')
 
-            
             # Update scores
-            winner_idx = self.white_idx if self.turn == WHITE else self.black_idx
-            self.scores[winner_idx] += 1
+            idx = self.white_idx if self.turn == WHITE else self.black_idx
+            self.scores[idx] += 1
 
             self.gui.disable_buttons()
 
@@ -244,13 +244,14 @@ class BackgammonGameManager:
                 boards_based_training(self.board_history)
 
             # Schedule the next game after a delay or end the session
-            self.window.after(AI_DELAY, self.start_next_game)
+            self.start_next_game()
+            #self.window.after(AI_DELAY, self.start_next_game)
 
             return True
         return False
     
-    def is_over (self):
-        return self.winner_player is not None
+    def is_over(self):
+        return self.white.win() or self.black.win()
 
     def update_and_render_board(self):
         # Update the board state and render it immediately
