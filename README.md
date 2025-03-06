@@ -8,7 +8,7 @@ A Python implementation of the classic board game Backgammon, featuring both hum
 
 This project implements a playable version of Backgammon with AI capabilities. The AI players are designed to simulate human-like decision-making by evaluating the game board and predicting future moves using heuristic and strategic methods. The goal is to provide an engaging experience whether you're playing against the computer or observing AI strategies.
 
-## Features and gamne modes
+## Features and game modes
 
 - **Human vs. AI**: Play against an AI opponent with configurable difficulty.
 - **AI vs. AI**: Watch two AI players compete, showcasing different strategies.
@@ -45,13 +45,13 @@ The AI uses a depth-limited minimax algorithm with alpha-beta pruning for strate
 - `BackgammonGameManager.py`: Manages the game logic and player interactions.
 - `Players/`: Contains various player classes, including human and different AI strategies.
   - `Player.py`: Base class for all players.
-  - `Human_Player.py`: Class for human players.
-  - `AI_Player.py`: Base class for AI players.
-    - `Heuristic_Player.py`: AI player using heuristic evaluation.
-    - `Random_Player.py`: AI player making random moves.
-    - `Min_Max_Player.py`: AI player using minimax algorithm.
-    - `MCTS_Player.py`: AI player using Monte Carlo Tree Search.
-    - `Neural_Player.py`: AI player using neural network evaluation.
+    - `Human_Player.py`: Class for human players.
+    - `AI_Player.py`: Base class for AI players.
+        - `Heuristic_Player.py`: AI player using heuristic evaluation.
+        - `Random_Player.py`: AI player making random moves.
+        - `Min_Max_Player.py`: AI player using minimax algorithm.
+        - `MCTS_Player.py`: AI player using Monte Carlo Tree Search.
+        - `Neural_Player.py`: AI player using neural network evaluation.
 - `Eval_position.py`: Functions for evaluating board positions based on various criteria.
 - `Constants.py`: Configuration constants and parameters used throughout the project.
 - `BoardTree.py`: Manages the game tree for MCTS and minimax algorithms.
