@@ -56,8 +56,9 @@ PLAYER_CONFIGURATIONS = {
     "human_vs_human": ["Human", "Human"],
     "human_vs_ai": ["Human", "AI"],
     "ai_vs_human": ["AI", "Human"],
+    "neural_vs_mcts": [NEURAL_AI, [MCTS_AI, ratios1, 2.2]],
     "neural_vs_neural": [NEURAL_AI, NEURAL_AI],
-    "ai_vs_neural": [HEUR_AI, NEURAL_AI, NEURAL_AI, HEUR_AI],
+    "ai_vs_neural": [HEUR_AI, NEURAL_AI],
 }
 
 # Multiple AIs with different ratio settings
@@ -74,6 +75,7 @@ class GameLooper:
         self.game_count = 0
         self.current_game = None
         self.players = PLAYER_CONFIGURATIONS["ai_vs_neural"]  # Default configuration
+        self.start_board = START_BOARD  # Default board configuration
         #self.start_board = [0, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 1, 0, 2, 0, 0, 5, 14]
 
     def check_for_quit(self, window):
@@ -96,7 +98,7 @@ class GameLooper:
         
         # Create new game
         self.game_count += 1
-        self.current_game = BackgammonGameManager(window, self.players)
+        self.current_game = BackgammonGameManager(window, self.players, self.start_board)
         return self.current_game.winner_player != None # Return True if the game is finished
     
     def schedule_next_game(self, window):
