@@ -1,6 +1,6 @@
 from tkinter import Tk
-from GUI import BackgammonGameGUI
-from Constants import EVAL_DISTRIBUTION, NETWORK_TRAINING
+from BackgammonGameManager import BackgammonGameManager
+from Constants import EVAL_DISTRIBUTION, NETWORK_TRAINING, HEUR_AI
 
 import random
 
@@ -46,20 +46,22 @@ def turnament():
     window.title("Backgammon AI Tournament")
 
     if NETWORK_TRAINING:
-        players = ["AI"] * NUM_AI_PLAYERS  # Generate a list of AI players
+        players = [HEUR_AI] * NUM_AI_PLAYERS  # Generate a list of AI players
     else: # Generate a list of AI players with random ratios
-        players = ["AI"]
+        players = [HEUR_AI]
         for _ in range(NUM_AI_PLAYERS):
             ratios = generate_random_ratios()
-            players.append(["AI", ratios])
+            players.append([HEUR_AI, ratios])
 
     # Initialize the game GUI with the list of players
-    game_gui = BackgammonGameGUI(window, players)
+    game_gui = BackgammonGameManager(window, players)
 
     # Start the GUI event loop
     window.mainloop()
 
     print_players_ratios(players)
+
+
 
 if __name__ == "__main__":
     turnament()
