@@ -1,0 +1,159 @@
+{
+    "games_played": 30,
+    "heuristic_wins": 18,
+    "neural_wins": 12,
+    "heuristic_win_percentage": 60.0,
+    "neural_win_percentage": 40.0,
+    "game_results": [
+        {
+            "game_number": 1,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 2,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 3,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 4,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 5,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 6,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 7,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 8,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 9,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 10,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 11,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 12,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 13,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 14,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 15,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 16,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 17,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 18,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 19,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 20,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 21,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 22,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 23,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 24,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 25,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 26,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 27,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 28,
+            "winner": 1,
+            "result": "Neural player won"
+        },
+        {
+            "game_number": 29,
+            "winner": 0,
+            "result": "Heuristic player won"
+        },
+        {
+            "game_number": 30,
+            "winner": 0,
+            "result": "Heuristic player won"
+        }
+    ]
+}
