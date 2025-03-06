@@ -1,5 +1,5 @@
 from Constants import *
-from AI_Player import AI_Player
+from Players.AI_Player import AI_Player
 from Eval_position import evaluate_position
 import copy
 from BoardTree import *
