@@ -2,7 +2,8 @@ import sys
 import msvcrt
 from tkinter import Tk
 from BackgammonGameManager import BackgammonGameManager  # Adjust import to match your file structure
-from Constants import ONE_RUN, AI, HUMAN, MIN_MAX_AI, MCTS_AI
+from Constants import *
+
 # Example ratio dictionaries
 ratios1 = {
     "prime_structure": 1,
@@ -55,8 +56,8 @@ PLAYER_CONFIGURATIONS = {
     "human_vs_human": ["Human", "Human"],
     "human_vs_ai": ["Human", "AI"],
     "ai_vs_human": ["AI", "Human"],
-    "ai_vs_ai": ["AI", "AI"],
-    "ai_vs_neural": ["AI", ["AI", ratios1, "HeuristicNet_copy1.pth"]]
+    "neural_vs_neural": [NEURAL_AI, NEURAL_AI],
+    "ai_vs_neural": [HEUR_AI, NEURAL_AI, NEURAL_AI, HEUR_AI],
 }
 
 # Multiple AIs with different ratio settings
@@ -72,7 +73,7 @@ class GameLooper:
     def __init__(self):
         self.game_count = 0
         self.current_game = None
-        self.players = PLAYER_CONFIGURATIONS["ai_vs_ai"]  # Default configuration
+        self.players = PLAYER_CONFIGURATIONS["ai_vs_neural"]  # Default configuration
         #self.start_board = [0, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 1, 0, 2, 0, 0, 5, 14]
 
     def check_for_quit(self, window):

@@ -224,7 +224,7 @@ def neural_eval(board, color, model_path=PATH):
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = HeuristicNet(BOARD_SIZE).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
 
     with torch.no_grad():
@@ -232,6 +232,8 @@ def neural_eval(board, color, model_path=PATH):
         x = x.unsqueeze(0)  # Add batch dimension
         prediction = model(x)
     return prediction.item()
+   
+# Main function
 
 if __name__ == "__main__":
     if not NETWORK_TRAINING:
