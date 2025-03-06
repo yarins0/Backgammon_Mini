@@ -248,6 +248,9 @@ class BackgammonGameManager:
 
             return True
         return False
+    
+    def is_over (self):
+        return self.winner_player is not None
 
     def update_and_render_board(self):
         # Update the board state and render it immediately
