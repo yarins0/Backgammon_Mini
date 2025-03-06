@@ -1,6 +1,6 @@
 # Flags and modes
 DEBUG_MODE = not True # Set to True to enable debug mode
-GUI_MODE =  False # Set to True to enable GUI
+GUI_MODE = False # Set to True to enable GUI
 SAFE_TEST = False # Set to True to test AI without initializing pieces from board
 NETWORK_TRAINING = True # Set to True to train the neural network
 ONE_RUN = False # Set to True to run only one game
@@ -28,7 +28,7 @@ TRI_WIDTH = 50
 TRI_HEIGHT = 200
 
 # Neural network parameters
-PATH = "HeuristicNets/newformat05.03.pth"
+PATH = "HeuristicNets/newformat06.03.pth"
 LEARNING_RATE = 0.001
 EPOCHS_NUM = 20
 BOARD_SIZE = 28  # Board format length
