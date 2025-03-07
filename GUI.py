@@ -7,6 +7,8 @@ if GUI_MODE:
             self.backgammon_game = BackgammonGame
             self.window = window
             self.window.title("Backgammon Game")
+            self.selected = None
+            self.destination = None
 
             # Initialize the UI components
             self.create_board()

@@ -83,19 +83,32 @@ run the run.py script:
 You will be prompted to select game modes and other configurations.
 Set ONE_RUN = False flag in constants.py to run the game in a loop (usefull for net training), type 'q' in console in order to terminate the loop.
 
-# Customization - run.py
+## Customization - run.py
 In run.py, you can customize the game by modifying the player array fed into BackgammonGameGUI. This array determines the players participating in the game and their types (human or AI).
 
 Example:
 
-    from Players.Human_Player import HumanPlayer
-    from Players.Min_Max_Player import MinMaxPlayer
+    # Define the starting board - will be set to default if not specifird in game builder
+    start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
 
+    ratios = {
+      "prime_structure": 0.5,
+      "anchors": 0.05,
+      "blots": 0.45,
+      "race_advantage": 0.0,
+      "home_board_strength": 0.0,
+      "captured_pieces": 0.0
+      }
+    
     # Define the players
-    players = [HUMAN, MIN_MAX_AI]
+    players1 = [HUMAN, MIN_MAX_AI]
+    players2 = [MIN_MAX_AI, [MIN_MAX_AI, ratios1, 2]] #minmax algorithm based players with default or custome variables
+    players3 = [NEURAL_AI , [NEURAL_AI, "HeuristicNets/newformat06.03.pth"]] #neural network players one with most recent model and one with an older less trained one
+    players4 = [[HEUR_AI, ratios] , [MCTS_AI, ratios, 3.2]]
 
     # Start the game with the defined players
-    BackgammonGameGUI(players)
+    window = Tk()
+    BackgammonGameManager(window, players1, start_board)
 
  You can replace players componets with other AI player classes like: 
  - RAND_AI
@@ -106,13 +119,13 @@ Example:
 
 Choosing the first option will use the default values stored in Constants.py. 
 
-# Customization - Constants.py
+## Customization - Constants.py
 This file contains flags and constants used throughout the project. You can modify these values to suit your needs and read about each variable in the file.
 
 # Game Rules:
 Backgammon is a two-player game where each player moves their checkers according to the roll of two dice. The objective is to move all your checkers into your home board and then bear them off.
 
-# Basic Rules:
+## Basic Rules:
 - Players move checkers in opposite directions.
 - A point occupied by a single checker is a blot. If an opponent lands on a blot, it is hit and placed on the bar.
 - A player must re-enter any checkers on the bar before making any other moves.
