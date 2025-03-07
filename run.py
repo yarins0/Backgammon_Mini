@@ -82,7 +82,7 @@ class GameLooper:
         self.current_game = None
         self.players = PLAYER_CONFIGURATIONS["human_vs_human"]  # Default configuration
         self.start_board = START_BOARD  # Default board configuration
-        self.start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+        #self.start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
         self.game_in_progress = False
 
     def check_for_quit(self, window):
