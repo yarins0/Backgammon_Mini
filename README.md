@@ -88,14 +88,17 @@ In run.py, you can customize the game by modifying the player array fed into Bac
 
 Example:
 
-    from Players.Human_Player import HumanPlayer
-    from Players.Min_Max_Player import MinMaxPlayer
-
+    # Define the starting board - will be set to default if not specifird in game builder
+    start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+    
     # Define the players
-    players = [HUMAN, MIN_MAX_AI]
+    players1 = [HUMAN, MIN_MAX_AI]
+    players2 = [MIN_MAX_AI, [MIN_MAX_AI, ratios1, 2]] #minmax algorithm based players with default or custome variables
+    players3 = [NEURAL_AI , [NEURAL_AI, "HeuristicNets/newformat06.03.pth"]] #neural network players one with most recent model and one with an older less trained one
 
     # Start the game with the defined players
-    BackgammonGameGUI(players)
+    window = Tk()
+    BackgammonGameManager(window, players1, start_board)
 
  You can replace players componets with other AI player classes like: 
  - RAND_AI
