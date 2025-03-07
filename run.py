@@ -53,12 +53,9 @@ ratios5 = {
 
 # Player Configurations
 PLAYER_CONFIGURATIONS = {
-    "human_vs_human": ["Human", "Human"],
-    "human_vs_ai": ["Human", "AI"],
-    "ai_vs_human": ["AI", "Human"],
     "neural_vs_mcts": [NEURAL_AI, [MCTS_AI, ratios1, 2.2]],
     "neural_vs_neural": [NEURAL_AI, NEURAL_AI],
-    "ai_vs_neural": [HEUR_AI, NEURAL_AI],
+    "human_vs_neural": [NEURAL_AI, HUMAN]
 }
 
 # Multiple AIs with different ratio settings
@@ -74,9 +71,10 @@ class GameLooper:
     def __init__(self):
         self.game_count = 0
         self.current_game = None
-        self.players = PLAYER_CONFIGURATIONS["ai_vs_neural"]  # Default configuration
+        self.players = PLAYER_CONFIGURATIONS["human_vs_neural"]  # Default configuration
         self.start_board = START_BOARD  # Default board configuration
-        #self.start_board = [0, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 3, 1, 0, 2, 0, 0, 5, 14]
+        #self.start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+        self.game_in_progress = False
 
     def check_for_quit(self, window):
         """Checks for 'q' key press to quit the application."""
@@ -99,16 +97,35 @@ class GameLooper:
         # Create new game
         self.game_count += 1
         self.current_game = BackgammonGameManager(window, self.players, self.start_board)
-        return self.current_game.winner_player != None # Return True if the game is finished
+        self.game_in_progress = True
+        return self.current_game.winner_player is not None  # Return True if the game is finished immediately
+    
+    def check_game_status(self, window):
+        """Checks if the current game has finished and schedules the next game if needed."""
+        if self.current_game and self.current_game.winner_player is not None:
+            # Game has finished
+            self.game_in_progress = False
+            
+            if ONE_RUN:
+                print("Game completed. ONE_RUN is set to True. Exiting.")
+                return
+            
+            # Schedule next game after a delay
+            window.after(100, lambda: self.schedule_next_game(window))
+        else:
+            # Game still in progress, check again after a delay
+            window.after(200, lambda: self.check_game_status(window))
     
     def schedule_next_game(self, window):
         """Schedules the next game with proper cleanup."""
-        if ONE_RUN and self.game_count > 0:
-            print("ONE_RUN is set to True. Exiting.")
-            return
-        if self.launch_new_game(window):
-            self.schedule_next_game(window)
-        window.after(200, lambda: self.schedule_next_game(window))
+        if not self.game_in_progress:
+            if self.launch_new_game(window):
+                # If the game finished immediately (unlikely), handle it
+                self.game_in_progress = False
+                window.after(1000, lambda: self.schedule_next_game(window))
+            else:
+                # Start monitoring the new game
+                self.check_game_status(window)
 
 def main():
     window = Tk()
