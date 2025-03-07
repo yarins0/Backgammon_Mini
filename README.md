@@ -90,11 +90,21 @@ Example:
 
     # Define the starting board - will be set to default if not specifird in game builder
     start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+
+    ratios = {
+      "prime_structure": 0.5,
+      "anchors": 0.05,
+      "blots": 0.45,
+      "race_advantage": 0.0,
+      "home_board_strength": 0.0,
+      "captured_pieces": 0.0
+      }
     
     # Define the players
     players1 = [HUMAN, MIN_MAX_AI]
     players2 = [MIN_MAX_AI, [MIN_MAX_AI, ratios1, 2]] #minmax algorithm based players with default or custome variables
     players3 = [NEURAL_AI , [NEURAL_AI, "HeuristicNets/newformat06.03.pth"]] #neural network players one with most recent model and one with an older less trained one
+    players4 = [[HEUR_AI, ratios] , [MCTS_AI, ratios, 3.2]]
 
     # Start the game with the defined players
     window = Tk()
