@@ -55,7 +55,16 @@ ratios5 = {
 PLAYER_CONFIGURATIONS = {
     "neural_vs_mcts": [NEURAL_AI, [MCTS_AI, ratios1, 2.2]],
     "neural_vs_neural": [NEURAL_AI, NEURAL_AI],
-    "human_vs_neural": [NEURAL_AI, HUMAN]
+    "human_vs_neural": [NEURAL_AI, HUMAN],
+    "human_vs_random": [HUMAN, RAND_AI],
+    "human_vs_human": [HUMAN, HUMAN],
+    "neural_vs_random": [NEURAL_AI, RAND_AI],
+    "mcts_vs_random": [MCTS_AI, RAND_AI],
+    "min_max_vs_neural": [MIN_MAX_AI, NEURAL_AI],
+    "min_max_vs_human": [MIN_MAX_AI, HUMAN],
+    "min_max_vs_mcts": [MIN_MAX_AI, MCTS_AI],
+    "random_vs_random": [RAND_AI, RAND_AI],
+    "min_max_vs_min_max": [MIN_MAX_AI, [MIN_MAX_AI, ratios1, 2]],
 }
 
 # Multiple AIs with different ratio settings
@@ -71,9 +80,9 @@ class GameLooper:
     def __init__(self):
         self.game_count = 0
         self.current_game = None
-        self.players = PLAYER_CONFIGURATIONS["human_vs_neural"]  # Default configuration
+        self.players = PLAYER_CONFIGURATIONS["human_vs_human"]  # Default configuration
         self.start_board = START_BOARD  # Default board configuration
-        #self.start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+        self.start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
         self.game_in_progress = False
 
     def check_for_quit(self, window):
