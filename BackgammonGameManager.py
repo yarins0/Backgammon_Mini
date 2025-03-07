@@ -119,7 +119,7 @@ class BackgammonGameManager:
             print(f"{self.current_player()} rolled: {self.rolls}")
         
         # Disable the roll button until the turn ends
-        self.gui.disable_roll_end_buttons(True)
+        self.gui.disable_roll_button(True)
         self.gui.set_rolls(self.rolls)
         self.gui.set_title("Choose a piece to move")
 
