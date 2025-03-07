@@ -41,26 +41,26 @@ class BackgammonGameManager:
         Parse the player input to determine the type and ratios.
         """
         if player == HUMAN:
-            return Human_Player(color) # Human player
+            return Human_Player(color, board=self.start_board) # Human player
         elif player == RAND_AI:
-            return Random_Player(color)  # Random AI player
+            return Random_Player(color, board=self.start_board)  # Random AI player
         elif player == HEUR_AI:
-            return Heuristic_Player(color)
+            return Heuristic_Player(color, board=self.start_board)
         elif player == MIN_MAX_AI:
-            return Min_Max_Player(color)
+            return Min_Max_Player(color, board=self.start_board)
         elif player == MCTS_AI:
-            return MCTS_Player(color)
+            return MCTS_Player(color, board=self.start_board)
         elif player == NEURAL_AI:
-            return Neural_Player(color)
+            return Neural_Player(color, board=self.start_board)
         elif isinstance(player, list):
             if player[0] == HEUR_AI:
-                return Heuristic_Player(color, ratios=player[1])
+                return Heuristic_Player(color, board=self.start_board, ratios=player[1])
             elif player[0] == NEURAL_AI:
-                return Neural_Player(color, model_path=player[1])
+                return Neural_Player(color, board=self.start_board, model_path=player[1])
             elif player[0] == MCTS_AI:
-                return MCTS_Player(color, ratios=player[1], c=player[2])
+                return MCTS_Player(color, board=self.start_board, ratios=player[1], c=player[2])
             elif player[0] == MIN_MAX_AI:
-                return Min_Max_Player(color, ratios=player[1], depth=player[2])
+                return Min_Max_Player(color, board=self.start_board, ratios=player[1], depth=player[2])
             else:
                 raise ValueError("Invalid player input format")
         else:
@@ -119,7 +119,7 @@ class BackgammonGameManager:
             print(f"{self.current_player()} rolled: {self.rolls}")
         
         # Disable the roll button until the turn ends
-        self.gui.disable_roll_end_buttons(True)
+        self.gui.disable_roll_button(True)
         self.gui.set_rolls(self.rolls)
         self.gui.set_title("Choose a piece to move")
 
@@ -173,15 +173,18 @@ class BackgammonGameManager:
         
         self.gui.goto(event)
 
-        # Check if the move is valid
-
         for roll in self.rolls:
             try:
                 used_die_value = self.current_player().move_piece(self.gui.selected, self.gui.destination, roll)
                 if used_die_value == roll:
-                    self.rolls.remove(used_die_value)  # Remove the used die
+                    # Remove the used die value from the available rolls
+                    self.rolls.remove(used_die_value)
                     self.gui.set_rolls(self.rolls)
+
+                    # Update the board after the move
+                    self.board = self.current_player().board
                     self.update_and_render_board()
+                    self.check_win_condition()
                     break
             except ValueError as e:
                 self.gui.set_title(str(e))
@@ -244,8 +247,8 @@ class BackgammonGameManager:
                 boards_based_training(self.board_history)
 
             # Schedule the next game after a delay or end the session
-            self.start_next_game()
-            #self.window.after(AI_DELAY, self.start_next_game)
+            #self.start_next_game()
+            self.window.after(AI_DELAY, self.start_next_game)
 
             return True
         return False
