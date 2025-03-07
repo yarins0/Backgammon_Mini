@@ -28,7 +28,7 @@ TRI_WIDTH = 50
 TRI_HEIGHT = 200
 
 # Neural network parameters
-PATH = "HeuristicNets/newformat06.03.pth"
+PATH = "HeuristicNets/newformat07.03.pth"
 LEARNING_RATE = 0.001
 EPOCHS_NUM = 20
 BOARD_SIZE = 28  # Board format length
