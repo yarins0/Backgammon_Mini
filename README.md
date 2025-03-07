@@ -83,7 +83,7 @@ run the run.py script:
 You will be prompted to select game modes and other configurations.
 Set ONE_RUN = False flag in constants.py to run the game in a loop (usefull for net training), type 'q' in console in order to terminate the loop.
 
-# Customization - run.py
+## Customization - run.py
 In run.py, you can customize the game by modifying the player array fed into BackgammonGameGUI. This array determines the players participating in the game and their types (human or AI).
 
 Example:
@@ -106,13 +106,13 @@ Example:
 
 Choosing the first option will use the default values stored in Constants.py. 
 
-# Customization - Constants.py
+## Customization - Constants.py
 This file contains flags and constants used throughout the project. You can modify these values to suit your needs and read about each variable in the file.
 
 # Game Rules:
 Backgammon is a two-player game where each player moves their checkers according to the roll of two dice. The objective is to move all your checkers into your home board and then bear them off.
 
-# Basic Rules:
+## Basic Rules:
 - Players move checkers in opposite directions.
 - A point occupied by a single checker is a blot. If an opponent lands on a blot, it is hit and placed on the bar.
 - A player must re-enter any checkers on the bar before making any other moves.
