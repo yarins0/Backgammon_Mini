@@ -41,7 +41,7 @@ def run_comparison_games(num_games=10, timeout_per_game=5):
         games_played += 1
         print(f"\nStarting game {game_num} of {num_games}...")
 
-        neural_player = [NEURAL_AI, "HeuristicNets/newformat06.03.pth"]
+        neural_player = [NEURAL_AI, "HeuristicNets/newformat07.03.pth"]
         players = [HEUR_AI, neural_player] if game_num % 2 == 0 else [neural_player, HEUR_AI] #alternating players in order to achieve fair colors
         
         # Create a new game with heuristic player (player 1) vs neural player (player 2)
