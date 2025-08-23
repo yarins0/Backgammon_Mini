@@ -1,8 +1,14 @@
-@author: Yarin Solomon
-
 # Backgammon AI Project
 
 A Python implementation of the classic board game Backgammon, featuring both human and AI players. This project allows you to play against an AI opponent or watch two AI players compete against each other. The AI uses heuristic evaluation, minimax, MCTS, and neural network strategies to make decisions.
+
+## 👨‍💻 Author
+
+**Owner**  
+*Full Stack Developer*  
+📧 Contact: [yarinso39@gmail.com]  
+🔗 GitHub: [https://github.com/yarins0]  
+🌐 LInkedin: [https://www.linkedin.com/in/yarin-solomon/]  
 
 ## Introduction
 
