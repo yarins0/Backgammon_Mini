@@ -1,6 +1,6 @@
 # Flags and modes
 DEBUG_MODE = not True # Set to True to enable debug mode
-GUI_MODE = False # Set to True to enable GUI
+GUI_MODE = True # Set to True to enable GUI
 SAFE_TEST = False # Set to True to test AI without initializing pieces from board
 NETWORK_TRAINING = True # Set to True to train the neural network
 ONE_RUN = False # Set to True to run only one game
