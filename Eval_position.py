@@ -12,10 +12,10 @@ def evaluate_position(board, ratios=EVAL_DISTRIBUTION):
     :param ratios: A dictionary containing the evaluation ratios. The sum of the values should be 1.
     :return: The evaluated score of the board, clamped to [0, 1].
     """
-    #Game is already won
-    if board[24] == 15:
+    # board[26] = white borne off, board[27] = black borne off
+    if board[26] == 15:
         return 1.0
-    if board[25] == 15:
+    if board[27] == 15:
         return 0.0
     
     # Validate ratios
@@ -214,7 +214,7 @@ def count_weighted_blots(board, is_white):
     for blot in blots:
         min_distance = min(abs(blot - opp) for opp in opponent_points) if opponent_points else float('inf')
         hit_probability = calculate_hit_probability(min_distance)
-        weighted_blots *= hit_probability
+        weighted_blots += hit_probability
     return weighted_blots
 
 def calculate_hit_probability(distance):

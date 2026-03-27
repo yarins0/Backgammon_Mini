@@ -27,16 +27,17 @@ class BoardNode:
         """
         Check if the game is won.
         """
-        if self.terminal or self.board[24] == 15 or self.board[0] == 15:
+        # board[26] = white borne off, board[27] = black borne off
+        if self.terminal or self.board[26] == 15 or self.board[27] == 15:
             self.terminal = True
             
         return self.terminal
     
     def is_fully_expanded(self, roll):
-        return roll.sort() in self.fully_expanded_rolls
-    
+        return tuple(sorted(roll)) in self.fully_expanded_rolls
+
     def fully_expand_roll(self, roll):
-        self.fully_expanded_rolls.append(roll.sort())
+        self.fully_expanded_rolls.append(tuple(sorted(roll)))
     
     def get_evaluation(self):
         """

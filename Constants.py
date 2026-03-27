@@ -1,8 +1,8 @@
 # Flags and modes
-DEBUG_MODE = not True # Set to True to enable debug mode
+DEBUG_MODE = False # Set to True to enable debug mode
 GUI_MODE = True # Set to True to enable GUI
 SAFE_TEST = False # Set to True to test AI without initializing pieces from board
-NETWORK_TRAINING = True # Set to True to train the neural network
+NETWORK_TRAINING = False # Set to True to train the neural network during gameplay
 ONE_RUN = False # Set to True to run only one game
 
 # Colors parameters
@@ -20,7 +20,7 @@ HUMAN = "Human"
 # Game parameters
 START_BOARD = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2, 0, 0, 0, 0]
 
-TURN_TIME = 1000  # Default turn time limit in seconds
+TURN_TIME = 60  # Default turn time limit in seconds
 AI_DELAY = 0  # Delay between AI moves in milliseconds
 
 # Gui parameters

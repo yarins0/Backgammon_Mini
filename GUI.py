@@ -21,12 +21,22 @@ if GUI_MODE:
 
             self.title = StringVar(value=f"")
             self.time_remaining = StringVar()
+            self._timer_after_id = None
+            self.turn_indicator = StringVar()
+            self.matchup = StringVar()
 
+            # Matchup label shows "Black Player (Black) vs White Player (White)"
+            self.matchup_label = Label(
+                self.top_frame,
+                textvariable=self.matchup,
+                font=("Helvetica", 12, "bold"),
+            )
             # Create the labels
             self.turnInst = Label(self.top_frame, textvariable=self.title)
             self.timer_label = Label(self.top_frame, textvariable=self.time_remaining)
 
             # Pack the labels into self.top_frame
+            self.matchup_label.pack()
             self.turnInst.pack()
             self.timer_label.pack()
 
@@ -68,6 +78,16 @@ if GUI_MODE:
 
             # Now pack the canvas
             self._canvas.pack(pady=10)
+
+            # Turn indicator label below the board
+            self.turn_label = Label(
+                self.window,
+                textvariable=self.turn_indicator,
+                font=("Helvetica", 13, "bold"),
+                pady=6, padx=20,
+                relief=FLAT,
+            )
+            self.turn_label.pack(pady=(0, 8))
 
             # Bindings for human move events
             self._canvas.bind('<Button-1>', self.backgammon_game.human_move1)
@@ -146,24 +166,28 @@ if GUI_MODE:
             self.reset_components()
 
         def start_timer(self):
-            """Starts/restarts the countdown for the human player's turn."""
-            # Start the timer
+            """Starts/restarts the countdown for the human player’s turn."""
+            # Cancel any pending callback from a previous timer loop before
+            # starting a new one — without this, each new turn adds another
+            # concurrent loop and the countdown accelerates each turn.
+            if self._timer_after_id:
+                self.window.after_cancel(self._timer_after_id)
+            self._timer_after_id = None
             self.timer_running = True
             self.time_left = TURN_TIME
             self.update_timer()
 
         def update_timer(self):
             """Updates the countdown label every second until time runs out."""
+            self._timer_after_id = None
             if self.time_left > 0:
                 self.time_remaining.set(f"Time left: {self.time_left} seconds")
                 self.time_left -= 1
-                # Schedule the next update in 1 second
                 if self.timer_running:
-                    self.window.after(1000, self.update_timer)
+                    self._timer_after_id = self.window.after(1000, self.update_timer)
             else:
-                # Time’s up, end this turn automatically
-                self.set_title("Time's up! Ending your turn.")
-                self.backgammon_game.end_turn()
+                self.set_title("Time’s up! Ending your turn.")
+                self.backgammon_game.force_end_turn()
 
         
         def select(self, event):
@@ -248,6 +272,19 @@ if GUI_MODE:
         def set_time_remaining(self, time=''):
             self.time_remaining.set(time)
 
+        def set_matchup(self, black_str, white_str):
+            """Display who is playing above the board."""
+            self.matchup.set(f"{black_str} vs {white_str}")
+
+        def set_turn_indicator(self, color):
+            """Update the turn indicator label below the board."""
+            if color == WHITE:
+                self.turn_indicator.set("White's turn")
+                self.turn_label.config(bg='white', fg='black')
+            else:
+                self.turn_indicator.set("Black's turn")
+                self.turn_label.config(bg='#222222', fg='white')
+
 
 else:
     class BackgammonGameGUI:
@@ -303,4 +340,10 @@ else:
             pass
 
         def set_time_remaining(self, time=''):
+            pass
+
+        def set_matchup(self, black_str, white_str):
+            pass
+
+        def set_turn_indicator(self, color):
             pass

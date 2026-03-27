@@ -10,13 +10,15 @@ from Constants import *
 import random
 
 class BackgammonGameManager:
-    def __init__(self, window, players, board= START_BOARD):
+    def __init__(self, window, players, board=START_BOARD, on_complete=None):
         self.window = window
         self.players = players
         self.scores = [0] * len(self.players)
         self.current_game_index = 0  # Track the current game index
         self.winner_player = None
         self.winner_idx = None
+        # Called with (players, scores, winner_idx) once all tournament games finish
+        self.on_complete = on_complete
 
         # Initialize the game board
         self.board = self.start_board = board.copy()
@@ -85,6 +87,11 @@ class BackgammonGameManager:
 
             print(f"Overall winner: Player {self.winner_idx} with {self.scores[self.winner_idx]} wins")
             self.gui.set_title(f"Overall winner: Player {self.winner_idx + 1} with {self.scores[self.winner_idx]} wins")
+
+            if self.on_complete:
+                self.window.after(AI_DELAY or 500, lambda: self.on_complete(
+                    self.players, self.scores, self.winner_idx
+                ))
          
     def start_game(self):
         # Reset the board history and clear the board
@@ -99,6 +106,7 @@ class BackgammonGameManager:
         # Print starting game information
         print(f"Starting game between {self.white} and {self.black}")
         self.gui.set_title(f"Starting game between {self.white} and {self.black}")
+        self.gui.set_matchup(str(self.black), str(self.white))
 
         self.prepare_turn()
 
@@ -133,8 +141,7 @@ class BackgammonGameManager:
         computer_roll = self.roll()
         current_player = self.current_player()
 
-        #try:
-        move_sequence = current_player.choose_move(self.board , computer_roll)
+        move_sequence = current_player.choose_move(self.board, computer_roll)
         if move_sequence:
             for move in move_sequence:
                 # Execute each move
@@ -146,7 +153,6 @@ class BackgammonGameManager:
                     except ValueError as e:
                         pass
                 self.update_and_render_board()
-                self.window.after(AI_DELAY)  # Optional: pause for AI_DELAY ms between moves
                 
         self.end_turn()
 
@@ -170,25 +176,27 @@ class BackgammonGameManager:
         if not self.rolls:
             self.gui.set_title("No dice rolls available to make a move.")
             return
-        
+
+        if self.gui.selected is None:
+            self.gui.set_title("Select a piece first (left click).")
+            return
+
         self.gui.goto(event)
 
+        move_succeeded = False
         for roll in self.rolls:
-            try:
-                used_die_value = self.current_player().move_piece(self.gui.selected, self.gui.destination, roll)
-                if used_die_value == roll:
-                    # Remove the used die value from the available rolls
-                    self.rolls.remove(used_die_value)
-                    self.gui.set_rolls(self.rolls)
+            used_die_value = self.current_player().move_piece(self.gui.selected, self.gui.destination, roll)
+            if used_die_value == roll:
+                self.rolls.remove(used_die_value)
+                self.gui.set_rolls(self.rolls)
+                self.board = self.current_player().board
+                self.update_and_render_board()
+                self.check_win_condition()
+                move_succeeded = True
+                break
 
-                    # Update the board after the move
-                    self.board = self.current_player().board
-                    self.update_and_render_board()
-                    self.check_win_condition()
-                    break
-            except ValueError as e:
-                self.gui.set_title(str(e))
-
+        if not move_succeeded:
+            self.gui.set_title("No valid die for that move — try a different destination.")
 
         if not self.rolls:
             self.gui.reset_movement()
@@ -206,7 +214,9 @@ class BackgammonGameManager:
         if DEBUG_MODE:
             print(f"{self.board}")
             print(f"{current_player} turn started")
-                
+
+        self.gui.set_turn_indicator(self.turn)
+
         if current_player.is_human:
             self.gui.set_title(f"It's the {current_player} player's turn! Roll the dice!")
             self.gui.disable_roll_end_buttons(False)
@@ -215,7 +225,21 @@ class BackgammonGameManager:
             self.AI_turn()
 
     def end_turn(self):
-        """Ends the current turn, re-enables the roll button, and resets UI."""
+        """Ends the current turn. Blocks human players who still have valid moves."""
+        if self.current_player().is_human and self.rolls:
+            possible = self.current_player().generate_all_moves(self.board, self.rolls)
+            has_moves = any(len(seq) > 0 for seq in possible)
+            if has_moves:
+                self.gui.set_title("You still have valid moves — make them before ending your turn!")
+                return
+        self._do_end_turn()
+
+    def force_end_turn(self):
+        """Ends the current turn unconditionally — used by the turn timer on expiry."""
+        self._do_end_turn()
+
+    def _do_end_turn(self):
+        """Common teardown shared by end_turn and force_end_turn."""
         self.gui.set_rolls()
         self.gui.set_time_remaining()
 
@@ -288,25 +312,27 @@ def roll():
         r = [r[0], r[0], r[0], r[0]]
     return r
 
-def generate_board(white_pieces , black_pieces):
-        board = [0] * 28
-        for point in white_pieces:
-            if point == 0: # white captured
-                board[26] += 1
-            elif point == 25:
-                board[24] += 1 # white out
-            else:
-                board[point - 1] += 1
+def generate_board(white_pieces, black_pieces):
+    """Build a board array from two lists of point positions.
+    Useful for visualizing a specific board state during testing.
+    White captured = point 0, white borne off = point 25.
+    Black captured = point 25, black borne off = point 0.
+    """
+    board = [0] * 28
+    for point in white_pieces:
+        if point == 0:   # white captured
+            board[26] += 1
+        elif point == 25:
+            board[24] += 1  # white borne off
+        else:
+            board[point - 1] += 1
 
-        for point in black_pieces:
-            if point == 25:  # black captured
-                board[27] += 1
-            elif point == 0:
-                board[25] += 1  # black out
-            else:
-                board[point - 1] -= 1
+    for point in black_pieces:
+        if point == 25:  # black captured
+            board[27] += 1
+        elif point == 0:
+            board[25] += 1  # black borne off
+        else:
+            board[point - 1] -= 1
 
-
-        return board
-
-
+    return board

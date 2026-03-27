@@ -20,7 +20,10 @@ class MCTS_Player(AI_Player):
         """
         super().__init__(color, board)
         
-        self.ratios = ratios
+        if not abs(sum(ratios.values()) - 1.0) < 1e-6:
+            self.ratios = EVAL_DISTRIBUTION
+        else:
+            self.ratios = ratios
         self.c = c
         
         # Initialize the board tree with the current board state
@@ -193,7 +196,6 @@ class MCTS_Player(AI_Player):
                     self.get_next_player(node.player_turn)
                 )
                 node.add_child(new_node)
-                print(f"new node: moves:{new_node.path}")
                 self.mcts_backpropagate(new_node, self.mcts_simulate(new_node))
                 return new_node
                 

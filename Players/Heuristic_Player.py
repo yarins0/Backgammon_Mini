@@ -15,7 +15,10 @@ class Heuristic_Player(AI_Player):
         """
         super().__init__(color, board)
         
-        self.ratios = ratios
+        if not abs(sum(ratios.values()) - 1.0) < 1e-6:
+            self.ratios = EVAL_DISTRIBUTION
+        else:
+            self.ratios = ratios
 
     def __str__(self) -> str:
         return f"Heuristic Player ({self.color})"

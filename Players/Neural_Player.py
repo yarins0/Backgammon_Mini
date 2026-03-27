@@ -1,3 +1,4 @@
+import os
 from Constants import *
 from Players.AI_Player import AI_Player
 from HeuristicNet import neural_eval
@@ -18,7 +19,7 @@ class Neural_Player(AI_Player):
         self.model_path = model_path
 
     def __str__(self) -> str:
-        return f"Neural AI Player - {self.model_path} ({self.color})"
+        return f"Neural AI ({os.path.basename(self.model_path)}) ({self.color})"
 
 
     def choose_move(self, board:list ,roll: list, current_color=None) -> list:

@@ -1,4 +1,5 @@
 from Constants import *
+import copy
 
 class Player:
     def __init__(self, 
@@ -360,6 +361,90 @@ class Player:
     def calculate_bearing_off_distance(self, from_pos):
         distance = 23 - from_pos + 1 if self.color == WHITE else from_pos + 1
         return distance
+
+    def generate_all_moves(self, board: list, roll: list, current_color=None) -> list:
+        if current_color is None:
+            current_color = self.color
+        all_moves = []
+        self.generate_moves_recursive(board, roll, [], all_moves, current_color)
+        return all_moves
+
+    def generate_moves_recursive(self, board: list, rolls: list, move_sequence: list, all_moves: list, current_color: str):
+        if not rolls:
+            all_moves.append(move_sequence)
+            return
+
+        captured_pos = get_captured_position(current_color)
+        pieces_on_bar = board[captured_pos]
+        possible_moves_found = False
+
+        sorted_rolls = sorted(rolls, reverse=True)
+        unique_rolls = set(sorted_rolls)
+
+        for roll_val in unique_rolls:
+            remaining_rolls = sorted_rolls.copy()
+            remaining_rolls.remove(roll_val)
+            possible_moves = self.generate_valid_moves([roll_val], board, current_color)
+
+            if pieces_on_bar > 0:
+                possible_moves = [m for m in possible_moves if m[0] == captured_pos]
+
+            if not possible_moves:
+                continue
+
+            possible_moves_found = True
+            for move in possible_moves:
+                new_board = self.simulate_move(copy.deepcopy(board), move, current_color)
+                self.generate_moves_recursive(
+                    new_board,
+                    remaining_rolls,
+                    move_sequence + [move],
+                    all_moves,
+                    current_color
+                )
+
+        if not possible_moves_found:
+            all_moves.append(move_sequence)
+
+    def generate_valid_moves(self, roll_values: list, board: list, current_color: str) -> list:
+        if self.has_captured_piece(board, current_color):
+            from_positions = [get_captured_position(current_color)]
+        else:
+            from_positions = [
+                i for i in range(24)
+                if self.is_piece_at_position(i, board, current_color)
+            ]
+
+        moves = []
+        for from_pos in from_positions:
+            for die in roll_values:
+                to_pos = self.calculate_target_position(from_pos, die, current_color)
+                if self.valid_move(from_pos, to_pos, die, board, current_color, simulate=True):
+                    moves.append((from_pos, to_pos))
+        return moves
+
+    def simulate_moves(self, board: list, moves: list, current_color=None) -> list:
+        if current_color is None:
+            current_color = self.color
+        for move in moves:
+            self.simulate_move(board, move, current_color)
+        return board
+
+    def simulate_move(self, board: list, move: tuple, current_color=None) -> list:
+        if current_color is None:
+            current_color = self.color
+        from_pos, to_pos = move
+
+        if self.is_piece_at_position(from_pos, board, current_color):
+            self.remove_piece(from_pos, board, current_color)
+        else:
+            print(f"No piece at position {from_pos} to move for {current_color}")
+            return board
+
+        self.capture_piece_at_position(to_pos, board, current_color, simulate=True)
+        self.add_piece(to_pos, board, current_color)
+        return board
+
 
 def get_captured_position(color=None):
     """
