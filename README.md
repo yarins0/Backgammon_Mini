@@ -1,141 +1,169 @@
-# Backgammon AI Project
+# Backgammon AI
 
-A Python implementation of the classic board game Backgammon, featuring both human and AI players. This project allows you to play against an AI opponent or watch two AI players compete against each other. The AI uses heuristic evaluation, minimax, MCTS, and neural network strategies to make decisions.
+A Python implementation of Backgammon with a Tkinter GUI and five AI opponents ranging from a random mover to a trained PyTorch neural network. A built-in tournament mode lets any combination of bots compete round-robin, with per-bot parameter tuning done through a setup screen — no code editing required.
 
-## 👨‍💻 Author
+---
 
-**Owner**  
-*Full Stack Developer*  
-📧 Contact: [yarinso39@gmail.com]  
-🔗 GitHub: [https://github.com/yarins0]  
-🌐 LInkedin: [https://www.linkedin.com/in/yarin-solomon/]  
+## Author
 
-## Introduction
+**Yarin Solomon** — Full Stack Developer
 
-This project implements a playable version of Backgammon with AI capabilities. The AI players are designed to simulate human-like decision-making by evaluating the game board and predicting future moves using heuristic and strategic methods. The goal is to provide an engaging experience whether you're playing against the computer or observing AI strategies.
+- Email: [yarinso39@gmail.com](mailto:yarinso39@gmail.com)
+- GitHub: [github.com/yarins0](https://github.com/yarins0)
+- LinkedIn: [linkedin.com/in/yarin-solomon](https://www.linkedin.com/in/yarin-solomon/)
+- Portfolio: [https://yarin-lab.vercel.app/](https://yarin-lab.vercel.app/)
+---
 
-## Features and game modes
+## Features
 
-- **Human vs. AI**: Play against an AI opponent with configurable difficulty.
-- **AI vs. AI**: Watch two AI players compete, showcasing different strategies.
-- **Heuristic Evaluation**: The AI assesses board positions using weighted factors.
-- **Minimax Algorithm**: Implements depth-limited minimax search for strategic planning.
-- **MCTS Algorithm**: Uses Monte Carlo Tree Search for decision making.
-- **Neural Network Evaluation**: Uses a trained neural network to evaluate board positions.
-- **Customizable Parameters**: Adjust evaluation weights, search depth, and other parameters to modify AI behavior.
+- **Tournament setup UI** — pick any combination of bots, tune each one's parameters via sliders and spinboxes, then hit Start. No code changes needed.
+- **Five AI strategies** — Random, Heuristic, Minimax, MCTS, and Neural Network, all configurable at runtime.
+- **Human play** — play against any AI or watch AIs compete.
+- **Board history navigation** — step backward and forward through move history during a game.
+- **Round-robin tournament** — when more than two players are added, the game manager runs every matchup and reports a final winner.
+- **Turn indicator** — a color-coded label below the board shows whose turn it is at a glance.
+- **Matchup display** — a headline above the board shows who is playing (e.g. "Heuristic Player (black) vs Human Player (white)").
+- **Move enforcement** — the End Turn button is blocked if you still have legal moves available.
+
+---
 
 ## AI Strategies
-The AI in this project employs two primary strategies:
 
-1. Heuristic Evaluation
-The AI uses a weighted sum of various board features to evaluate positions. The evaluation considers:
+### Random
+Makes a uniformly random legal move. Useful as a baseline opponent.
 
-Prime Structure: Building consecutive occupied points to block the opponent.
-Blots: Vulnerable single checkers that can be hit.
-Race Advantage: The overall progress of checkers towards the home board.
-Home Board Strength: The strength of the player's home board in preventing opponent re-entry.
-The weights for these features are configurable.
+### Heuristic
+Evaluates board positions using a weighted sum of six features:
 
-2. Minimax Algorithm
-The AI uses a depth-limited minimax algorithm with alpha-beta pruning for strategic decision-making. It simulates possible moves up to a certain depth and chooses the move that maximizes its advantage while minimizing the opponent's.
+| Feature | Description |
+|---|---|
+| `prime_structure` | Consecutive occupied points blocking the opponent |
+| `anchors` | Defensive anchor points in the opponent's home board |
+| `blots` | Penalty for exposed single checkers |
+| `race_advantage` | Overall checker progress toward the home board |
+| `home_board_strength` | Strength of the home board for blocking re-entry |
+| `captured_pieces` | Value of hitting and holding opponent pieces |
 
-3. MCTS Algorithm The AI uses Monte Carlo Tree Search to explore possible moves and outcomes, balancing exploration and exploitation to make decisions.
+All six weights are adjustable in the tournament setup screen.
 
-4. Neural Network Evaluation The AI uses a trained neural network to evaluate board positions, providing a more sophisticated and learned approach to decision-making.
+### Minimax
+Depth-limited minimax search using the heuristic evaluator above. Depth and all six weights are configurable. No alpha-beta pruning in the current implementation.
 
+### MCTS (Monte Carlo Tree Search)
+Explores the move tree using UCB1 selection, balancing exploration and exploitation. The exploration constant `c` and all six heuristic weights are configurable.
+
+### Neural Network
+A PyTorch feed-forward network trained on board positions scored by the heuristic evaluator. Multiple trained model checkpoints are included in `HeuristicNets/` and selectable from the setup screen.
+
+The chart below shows win rate against the heuristic player across training iterations. The network starts near random (~18%) and converges to ~60%, demonstrating that it successfully learns to outperform the hand-tuned heuristic it was trained against.
+
+![Neural network win rate vs training iterations](analysis/neural_winrate_vs_training_iters.png)
+
+---
 
 ## Project Structure
 
-- `run.py`: Entry point for running the game.
-- `run2.py`: Alternative entry point for running the game with different configurations.
-- `BackgammonGameManager.py`: Manages the game logic and player interactions.
-- `Players/`: Contains various player classes, including human and different AI strategies.
-  - `Player.py`: Base class for all players.
-    - `Human_Player.py`: Class for human players.
-    - `AI_Player.py`: Base class for AI players.
-        - `Heuristic_Player.py`: AI player using heuristic evaluation.
-        - `Random_Player.py`: AI player making random moves.
-        - `Min_Max_Player.py`: AI player using minimax algorithm.
-        - `MCTS_Player.py`: AI player using Monte Carlo Tree Search.
-        - `Neural_Player.py`: AI player using neural network evaluation.
-- `Eval_position.py`: Functions for evaluating board positions based on various criteria.
-- `Constants.py`: Configuration constants and parameters used throughout the project.
-- `BoardTree.py`: Manages the game tree for MCTS and minimax algorithms.
-- `GUI.py`: Manages the graphical user interface for the game.
-- `HeuristicNet.py`: Defines and trains the neural network for board evaluation.
+```
+Backgammon_Mini/
+├── run.py                    # Entry point — launches the tournament setup screen
+├── TournamentSetup.py        # Tkinter tournament configuration UI
+├── BackgammonGameManager.py  # Game loop, turn management, round-robin logic
+├── GUI.py                    # Board rendering and human input handling
+├── Constants.py              # All tunable flags and default values
+├── Eval_position.py          # Heuristic board evaluation functions
+├── BoardTree.py              # Game tree structure for Minimax and MCTS
+├── HeuristicNet.py           # Neural network definition and training utilities
+├── HeuristicNets/            # Saved model checkpoints (.pth files)
+├── Players/
+│   ├── Player.py             # Base class (includes move generation)
+│   ├── Human_Player.py
+│   ├── AI_Player.py          # Base class for all AI players
+│   ├── Random_Player.py
+│   ├── Heuristic_Player.py
+│   ├── Min_Max_Player.py
+│   ├── MCTS_Player.py
+│   └── Neural_Player.py
+├── analysis/                 # Research scripts and results
+│   ├── benchmark_heuristic_vs_neural.py
+│   ├── random_ratio_tournament.py
+│   └── neural_winrate_vs_training_iters.png
+└── tests/
+    └── test_core.py          # Unit tests (run with: python -m pytest tests/)
+```
+
+---
 
 ## Installation
 
-### Prerequisites
+### Requirements
 
-- Python 3.7 or higher installed on your system.
+- Python 3.8+
+- PyTorch (`pip install torch`)
+- Tkinter (included with standard Python on Windows and macOS; on Linux: `sudo apt install python3-tk`)
+- pytest (`pip install pytest`) — for running the test suite
 
-### Installation Steps
+### Steps
 
-1. Clone the Repository
-   ```sh
-   git clone https://github.com/yarins0/Backgammon_Mini.git
+```sh
+git clone https://github.com/yarins0/Backgammon_Mini.git
+cd Backgammon_Mini
+pip install torch
+python run.py
+```
 
-2. Navigate to the Project Directory
-    cd Backgammon_Mini
+### Running Tests
 
+```sh
+pip install pytest
+python -m pytest tests/
+```
 
-Note: As of now, there are no external dependencies other than Python standard libraries.
+---
 
-# Start the game
-run the run.py script: 
-    python run.py
+## Usage
 
-You will be prompted to select game modes and other configurations.
-Set ONE_RUN = False flag in constants.py to run the game in a loop (usefull for net training), type 'q' in console in order to terminate the loop.
+### Tournament Setup Screen
 
-## Customization - run.py
-In run.py, you can customize the game by modifying the player array fed into BackgammonGameGUI. This array determines the players participating in the game and their types (human or AI).
+When you launch `run.py`, the setup screen opens. From there:
 
-Example:
+1. Select a player type from the dropdown.
+2. Adjust the parameters that appear (heuristic weights, depth, exploration constant, or model file).
+3. Click **Add Player**. Repeat for each participant (minimum 2).
+4. Click **Start Tournament**.
 
-    # Define the starting board - will be set to default if not specifird in game builder
-    start_board = [0, 0, 0, -4, 0, -4, 0, 0, 0, -1, -1, 4, 1, 0, 1, 0, 2, 2, 5, -1, 0, -2, -1, 0, 0, 1, 0, 0]
+The game runs all matchups in round-robin order and displays the final winner when done.
 
-    ratios = {
-      "prime_structure": 0.5,
-      "anchors": 0.05,
-      "blots": 0.45,
-      "race_advantage": 0.0,
-      "home_board_strength": 0.0,
-      "captured_pieces": 0.0
-      }
-    
-    # Define the players
-    players1 = [HUMAN, MIN_MAX_AI]
-    players2 = [MIN_MAX_AI, [MIN_MAX_AI, ratios1, 2]] #minmax algorithm based players with default or custome variables
-    players3 = [NEURAL_AI , [NEURAL_AI, "HeuristicNets/newformat06.03.pth"]] #neural network players one with most recent model and one with an older less trained one
-    players4 = [[HEUR_AI, ratios] , [MCTS_AI, ratios, 3.2]]
+### Constants.py flags
 
-    # Start the game with the defined players
-    window = Tk()
-    BackgammonGameManager(window, players1, start_board)
+| Flag | Default | Description |
+|---|---|---|
+| `GUI_MODE` | `True` | Set to `False` to run headless (useful for bulk training) |
+| `ONE_RUN` | `False` | Set to `True` to stop after one game instead of looping |
+| `NETWORK_TRAINING` | `False` | Set to `True` to train the neural network on completed games |
+| `DEBUG_MODE` | `False` | Set to `True` to print board state and move info to console |
 
- You can replace players componets with other AI player classes like: 
- - RAND_AI
- - HEUR_AI    / [HEUR_AI, ratios]               # when ratios is a weight map
- - MIN_MAX_AI / [MIN_MAX_AI, ratios, depth] 
- - MCTS_AI    / [MCTS_AI, ratios, c] 
- - NEURAL_AI  / [NEURAL_AI, model_path]         # when model_path is a path to a saved model
+---
 
-Choosing the first option will use the default values stored in Constants.py. 
+## Distribution (Windows .exe)
 
-## Customization - Constants.py
-This file contains flags and constants used throughout the project. You can modify these values to suit your needs and read about each variable in the file.
+Use PyInstaller to package the project as a standalone executable:
 
-# Game Rules:
-Backgammon is a two-player game where each player moves their checkers according to the roll of two dice. The objective is to move all your checkers into your home board and then bear them off.
+```sh
+pip install pyinstaller
+pyinstaller run.py --name BackgammonAI --windowed --collect-all torch --hidden-import=torch --add-data "HeuristicNets/*.pth;HeuristicNets/"
+```
 
-## Basic Rules:
-- Players move checkers in opposite directions.
-- A point occupied by a single checker is a blot. If an opponent lands on a blot, it is hit and placed on the bar.
-- A player must re-enter any checkers on the bar before making any other moves.
-- The first player to bear off all their checkers wins the game.
-- For detailed rules, you may refer to official Backgammon rules.
+The output is in `dist/BackgammonAI/`. Zip that folder to distribute.
 
+---
 
+## Game Rules
+
+Backgammon is a two-player game played on a 24-point board. Each player moves their 15 checkers in opposite directions according to two dice rolls, aiming to bear off all checkers first.
+
+- A point with a single checker (a *blot*) can be hit by the opponent and sent to the bar.
+- A player with checkers on the bar must re-enter them before making any other move.
+- Once all checkers are in the home board, a player may begin bearing off.
+- The first player to bear off all 15 checkers wins.
+
+For full rules see the [official backgammon rules](https://usbgf.org/backgammon-basics-how-to-play/).
