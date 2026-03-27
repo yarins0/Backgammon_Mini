@@ -1,0 +1,21 @@
+# Claude Code
+.claude/
+.claude-flow/
+.mcp.json
+CLAUDE.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
