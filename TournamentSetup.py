@@ -71,6 +71,8 @@ class TournamentSetupWindow:
 
     def _build_ui(self):
         self.window.title("Backgammon — Tournament Setup")
+        self.window.geometry("660x750")
+        self.window.resizable(False, False)
 
         self.frame = Frame(self.window, padx=20, pady=20)
         self.frame.pack(fill=BOTH, expand=True)
@@ -84,8 +86,10 @@ class TournamentSetupWindow:
         self._build_right_panel(panels)
 
     def _build_left_panel(self, parent):
-        left = LabelFrame(parent, text="Configure Player", padx=10, pady=10)
-        left.pack(side=LEFT, fill=BOTH, expand=True, padx=(0, 10))
+        left = LabelFrame(parent, text="Configure Player", padx=10, pady=10,
+                          width=360, height=380)
+        left.pack_propagate(False)
+        left.pack(side=LEFT, padx=(0, 10))
 
         self._build_type_selector(left)
 
@@ -109,8 +113,10 @@ class TournamentSetupWindow:
                    command=self._on_type_changed).pack(side=LEFT)
 
     def _build_right_panel(self, parent):
-        right = LabelFrame(parent, text="Players", padx=10, pady=10, width=240)
-        right.pack(side=LEFT, fill=BOTH, expand=True)
+        right = LabelFrame(parent, text="Players", padx=10, pady=10,
+                           width=250, height=380)
+        right.pack_propagate(False)
+        right.pack(side=LEFT)
         right.pack_propagate(False)
 
         # Game count hint — updated in _refresh_roster
@@ -208,19 +214,24 @@ class TournamentSetupWindow:
         Entry(row, textvariable=self.c_var, width=8).pack(side=LEFT)
 
     def _build_model_selector(self):
-        """Dropdown populated with .pth files found in HeuristicNets/."""
+        """Dropdown populated with .pth files found in HeuristicNets/.
+        Displays filenames only; full paths are kept in self._model_paths for loading.
+        """
         row = Frame(self.param_frame)
         row.pack(fill=X, pady=2)
         self._param_widgets.append(row)
 
         Label(row, text="Model:", width=8, anchor=W).pack(side=LEFT)
 
-        models = self._find_model_files()
+        full_paths = self._find_model_files()
+        # Map filename → full path so the dropdown shows short names
+        self._model_paths = {os.path.basename(p): p for p in full_paths}
+        names = list(self._model_paths.keys())
         self.model_var = StringVar()
 
-        if models:
-            self.model_var.set(models[0])
-            OptionMenu(row, self.model_var, *models,
+        if names:
+            self.model_var.set(names[0])
+            OptionMenu(row, self.model_var, *names,
                        command=lambda _: None).pack(side=LEFT)
         else:
             self.model_var.set("")
@@ -296,10 +307,11 @@ class TournamentSetupWindow:
             return [MCTS_AI, ratios, c], f"MCTS AI (c={c:.2f})"
 
         if selected == "Neural AI":
-            model_path = self.model_var.get()
-            if not model_path:
+            model_name = self.model_var.get()
+            if not model_name:
                 return None, None
-            return [NEURAL_AI, model_path], f"Neural AI ({os.path.basename(model_path)})"
+            model_path = self._model_paths[model_name]
+            return [NEURAL_AI, model_path], f"Neural AI ({model_name})"
 
         return None, None
 
@@ -341,6 +353,8 @@ class TournamentSetupWindow:
 
     def destroy(self):
         self.frame.destroy()
+        self.window.resizable(True, True)
+        self.window.geometry("")  # Reset to auto-size for the game board
 
 
 class TournamentResultsScreen:

@@ -10,6 +10,16 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+.pytest_cache/
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# Distribution artifacts
+*.zip
+*.exe
 
 # Virtual environments
 .venv/

@@ -2,6 +2,8 @@
 
 A Python implementation of Backgammon with a Tkinter GUI and five AI opponents ranging from a random mover to a trained PyTorch neural network. A built-in tournament mode lets any combination of bots compete round-robin, with per-bot parameter tuning done through a setup screen — no code editing required.
 
+![Backgammon AI demo](backgammon_demo.gif)
+![https://yarin-lab.vercel.app/](https://yarin-lab.vercel.app/backgammon)
 ---
 
 ## Author
@@ -21,9 +23,6 @@ A Python implementation of Backgammon with a Tkinter GUI and five AI opponents r
 - **Human play** — play against any AI or watch AIs compete.
 - **Board history navigation** — step backward and forward through move history during a game.
 - **Round-robin tournament** — when more than two players are added, the game manager runs every matchup and reports a final winner.
-- **Turn indicator** — a color-coded label below the board shows whose turn it is at a glance.
-- **Matchup display** — a headline above the board shows who is playing (e.g. "Heuristic Player (black) vs Human Player (white)").
-- **Move enforcement** — the End Turn button is blocked if you still have legal moves available.
 
 ---
 
@@ -74,21 +73,15 @@ Backgammon_Mini/
 ├── BoardTree.py              # Game tree structure for Minimax and MCTS
 ├── HeuristicNet.py           # Neural network definition and training utilities
 ├── HeuristicNets/            # Saved model checkpoints (.pth files)
-├── Players/
-│   ├── Player.py             # Base class (includes move generation)
-│   ├── Human_Player.py
-│   ├── AI_Player.py          # Base class for all AI players
-│   ├── Random_Player.py
-│   ├── Heuristic_Player.py
-│   ├── Min_Max_Player.py
-│   ├── MCTS_Player.py
-│   └── Neural_Player.py
-├── analysis/                 # Research scripts and results
-│   ├── benchmark_heuristic_vs_neural.py
-│   ├── random_ratio_tournament.py
-│   └── neural_winrate_vs_training_iters.png
-└── tests/
-    └── test_core.py          # Unit tests (run with: python -m pytest tests/)
+└── Players/
+    ├── Player.py             # Base class
+    ├── Human_Player.py
+    ├── AI_Player.py          # Base class for all AI players
+    ├── Random_Player.py
+    ├── Heuristic_Player.py
+    ├── Min_Max_Player.py
+    ├── MCTS_Player.py
+    └── Neural_Player.py
 ```
 
 ---
@@ -100,7 +93,6 @@ Backgammon_Mini/
 - Python 3.8+
 - PyTorch (`pip install torch`)
 - Tkinter (included with standard Python on Windows and macOS; on Linux: `sudo apt install python3-tk`)
-- pytest (`pip install pytest`) — for running the test suite
 
 ### Steps
 
@@ -109,13 +101,6 @@ git clone https://github.com/yarins0/Backgammon_Mini.git
 cd Backgammon_Mini
 pip install torch
 python run.py
-```
-
-### Running Tests
-
-```sh
-pip install pytest
-python -m pytest tests/
 ```
 
 ---
@@ -144,16 +129,54 @@ The game runs all matchups in round-robin order and displays the final winner wh
 
 ---
 
-## Distribution (Windows .exe)
+## Distribution
 
-Use PyInstaller to package the project as a standalone executable:
+Build specs live in `packaging/`. Run all commands from the project root.
+
+```
+packaging/
+  windows_folder.spec    — Windows folder build (distribute as zip)
+  windows_onefile.spec   — Windows single-file build (portable .exe)
+  macos.spec             — macOS app bundle (must build on a Mac)
+  hooks/
+    rthook_dlldir.py     — Windows DLL search path fix
+```
+
+### Windows — folder build (recommended)
+
+Produces `dist/BackgammonAI/`. Zip the **entire folder** and share it — users extract and run `BackgammonAI.exe` from inside.
 
 ```sh
 pip install pyinstaller
-pyinstaller run.py --name BackgammonAI --windowed --collect-all torch --hidden-import=torch --add-data "HeuristicNets/*.pth;HeuristicNets/"
+python -m PyInstaller packaging/windows_folder.spec
 ```
 
-The output is in `dist/BackgammonAI/`. Zip that folder to distribute.
+Zip for upload:
+```powershell
+Compress-Archive -Path dist\BackgammonAI -DestinationPath BackgammonAI_windows.zip
+```
+
+### Windows — single-file build
+
+Produces one portable `dist/BackgammonAI.exe` that works from any location. **First launch takes ~60 seconds** while PyTorch extracts to a temp folder.
+
+```sh
+python -m PyInstaller packaging/windows_onefile.spec
+```
+
+### macOS — app bundle
+
+Must be built on a Mac. Produces `dist/BackgammonAI.app`.
+
+```sh
+pip install pyinstaller torch
+python -m PyInstaller packaging/macos.spec
+```
+
+Zip for upload:
+```sh
+zip -r BackgammonAI_macos.zip dist/BackgammonAI.app
+```
 
 ---
 
