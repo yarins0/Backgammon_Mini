@@ -1,0 +1,35 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:  # Trigger manually from the GitHub Actions tab
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pyinstaller
+
+      - name: Build macOS app
+        run: python -m PyInstaller packaging/macos.spec
+
+      - name: Zip the app bundle
+        run: zip -r BackgammonAI_macos.zip dist/BackgammonAI.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BackgammonAI_macos
+          path: BackgammonAI_macos.zip
+          retention-days: 30
