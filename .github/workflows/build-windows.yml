@@ -1,0 +1,48 @@
+name: Build Windows App
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to upload to (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write  # Required to upload to GitHub Releases
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pyinstaller
+
+      - name: Build folder version
+        run: python -m PyInstaller packaging/windows_folder.spec
+
+      - name: Zip folder build
+        run: Compress-Archive -Path dist\BackgammonAI -DestinationPath BackgammonAI_windows.zip
+
+      - name: Build single-file version
+        run: python -m PyInstaller packaging/windows_onefile.spec
+
+      - name: Upload folder zip to release
+        run: gh release upload "${{ github.event.inputs.release_tag }}" BackgammonAI_windows.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload single exe to release
+        run: gh release upload "${{ github.event.inputs.release_tag }}" dist\BackgammonAI.exe --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

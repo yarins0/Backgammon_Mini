@@ -11,10 +11,15 @@ from PyInstaller.utils.hooks import collect_all
 ROOT = os.path.dirname(SPECPATH)
 
 datas = [(os.path.join(ROOT, 'HeuristicNets', '*.pth'), 'HeuristicNets/')]
-# Place python313.dll next to the exe so Windows finds it regardless of
+# Place pythonXXX.dll next to the exe so Windows finds it regardless of
 # which directory the user launches from (Windows checks the exe's own
 # directory first in its DLL search order).
-binaries = [('C:/Python313/python313.dll', '.')]
+import sys
+_py_dll = os.path.join(
+    os.path.dirname(sys.executable),
+    f'python{sys.version_info.major}{sys.version_info.minor}.dll',
+)
+binaries = [(_py_dll, '.')]
 hiddenimports = ['torch']
 tmp_ret = collect_all('torch')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
