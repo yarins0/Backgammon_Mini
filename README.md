@@ -3,7 +3,9 @@
 A Python implementation of Backgammon with a Tkinter GUI and five AI opponents ranging from a random mover to a trained PyTorch neural network. A built-in tournament mode lets any combination of bots compete round-robin, with per-bot parameter tuning done through a setup screen — no code editing required.
 
 ![Backgammon AI demo](backgammon_demo.gif)
-![https://yarin-lab.vercel.app/](https://yarin-lab.vercel.app/backgammon)
+
+[▶ Live Demo](https://yarin-lab.vercel.app/backgammon)
+
 ---
 
 ## Author
@@ -73,15 +75,23 @@ Backgammon_Mini/
 ├── BoardTree.py              # Game tree structure for Minimax and MCTS
 ├── HeuristicNet.py           # Neural network definition and training utilities
 ├── HeuristicNets/            # Saved model checkpoints (.pth files)
-└── Players/
-    ├── Player.py             # Base class
-    ├── Human_Player.py
-    ├── AI_Player.py          # Base class for all AI players
-    ├── Random_Player.py
-    ├── Heuristic_Player.py
-    ├── Min_Max_Player.py
-    ├── MCTS_Player.py
-    └── Neural_Player.py
+├── Players/
+│   ├── Player.py             # Base class
+│   ├── Human_Player.py
+│   ├── AI_Player.py          # Base class for all AI players
+│   ├── Random_Player.py
+│   ├── Heuristic_Player.py
+│   ├── Min_Max_Player.py
+│   ├── MCTS_Player.py
+│   └── Neural_Player.py
+├── packaging/                # PyInstaller build specs for all platforms
+│   ├── windows_folder.spec
+│   ├── windows_onefile.spec
+│   ├── macos.spec
+│   └── hooks/
+├── .github/workflows/        # CI: automated builds for Windows and macOS
+├── analysis/                 # Training charts and evaluation scripts
+└── tests/                    # Automated test suite
 ```
 
 ---
@@ -166,15 +176,13 @@ python -m PyInstaller packaging/windows_onefile.spec
 
 ### macOS — app bundle
 
-Must be built on a Mac. Produces `dist/BackgammonAI.app`.
+The easiest way is via GitHub Actions — no Mac required. Go to **Actions → Build macOS App → Run workflow**, enter your release tag, and the zip is uploaded to your GitHub Release automatically.
+
+To build manually on a Mac:
 
 ```sh
 pip install pyinstaller torch
 python -m PyInstaller packaging/macos.spec
-```
-
-Zip for upload:
-```sh
 zip -r BackgammonAI_macos.zip dist/BackgammonAI.app
 ```
 
