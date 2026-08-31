@@ -14,8 +14,6 @@ A built-in tournament mode lets any combination of bots — or a human — compe
 
 **Live demo:** [yarin-lab.vercel.app/backgammon](https://yarin-lab.vercel.app/backgammon)
 
-**Author:** Yarin Solomon · [github.com/yarins0](https://github.com/yarins0) · [linkedin.com/in/yarin-solomon](https://www.linkedin.com/in/yarin-solomon/) · [yarinso39@gmail.com](mailto:yarinso39@gmail.com)
-
 ## 📑 Table of Contents
 
 - [🏗️ Architecture](#-architecture)
