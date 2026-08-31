@@ -1,194 +1,150 @@
-# Backgammon AI
+# 🎲 Backgammon AI
 
-A Python implementation of Backgammon with a Tkinter GUI and five AI opponents ranging from a random mover to a trained PyTorch neural network. A built-in tournament mode lets any combination of bots compete round-robin, with per-bot parameter tuning done through a setup screen — no code editing required.
+[![Python](https://img.shields.io/badge/Python-3.12%2F3.13-3776AB?logo=python&logoColor=white)](.github/workflows/build-windows.yml)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Neural%20Player-EE4C2C?logo=pytorch&logoColor=white)](HeuristicNet.py)
+[![Tkinter](https://img.shields.io/badge/GUI-Tkinter-3776AB?logo=python&logoColor=white)](GUI.py)
+[![PyInstaller](https://img.shields.io/badge/Build-PyInstaller-3776AB?logo=python&logoColor=white)](packaging)
+[![pytest](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](tests/test_core.py)
+
+A Python implementation of Backgammon with a Tkinter GUI and five AI opponents ranging from a random mover to a trained PyTorch neural network.
+
+A built-in tournament mode lets any combination of bots — or a human — compete round-robin, with every parameter tuned through a setup screen rather than by editing source. The engineering worth reading is in `Eval_position.py`, `BoardTree.py`, and `HeuristicNet.py`: the same six-feature heuristic evaluator backs the Heuristic, Minimax, and MCTS players, and the neural player is trained to outperform it.
 
 ![Backgammon AI demo](backgammon_demo.gif)
 
-[▶ Live Demo](https://yarin-lab.vercel.app/backgammon)
+**Live demo:** [yarin-lab.vercel.app/backgammon](https://yarin-lab.vercel.app/backgammon)
 
----
+**Author:** Yarin Solomon · [github.com/yarins0](https://github.com/yarins0) · [linkedin.com/in/yarin-solomon](https://www.linkedin.com/in/yarin-solomon/) · [yarinso39@gmail.com](mailto:yarinso39@gmail.com)
 
-## Author
+## 📑 Table of Contents
 
-**Yarin Solomon** — Full Stack Developer
+- [🏗️ Architecture](#-architecture)
+- [🤖 AI Strategies](#-ai-strategies)
+- [💻 Local Development](#-local-development)
+- [⚙️ Configuration](#-configuration)
+- [📦 Distribution](#-distribution)
+- [📁 Repo Layout](#-repo-layout)
+- [🎯 Game Rules](#-game-rules)
+- [👤 Author](#-author)
 
-- Email: [yarinso39@gmail.com](mailto:yarinso39@gmail.com)
-- GitHub: [github.com/yarins0](https://github.com/yarins0)
-- LinkedIn: [linkedin.com/in/yarin-solomon](https://www.linkedin.com/in/yarin-solomon/)
-- Portfolio: [https://yarin-lab.vercel.app/](https://yarin-lab.vercel.app/)
----
+## 🏗️ Architecture
 
-## Features
+```mermaid
+flowchart TB
+    Setup["TournamentSetup.py<br/>tournament config UI"] -->|"player list"| Manager["BackgammonGameManager.py<br/>game loop, round-robin"]
+    Manager --> GUI["GUI.py<br/>board rendering, input"]
+    Manager --> Players["Players/<br/>Human, Random, Heuristic,<br/>MinMax, MCTS, Neural"]
+    Players --> Eval["Eval_position.py<br/>6-feature heuristic"]
+    Players --> Tree["BoardTree.py<br/>game tree (Minimax, MCTS)"]
+    Players --> Net["HeuristicNet.py<br/>PyTorch model"]
+    Net -.->|"loads"| Checkpoints[("HeuristicNets/*.pth")]
+```
 
-- **Tournament setup UI** — pick any combination of bots, tune each one's parameters via sliders and spinboxes, then hit Start. No code changes needed.
-- **Five AI strategies** — Random, Heuristic, Minimax, MCTS, and Neural Network, all configurable at runtime.
-- **Human play** — play against any AI or watch AIs compete.
-- **Board history navigation** — step backward and forward through move history during a game.
-- **Round-robin tournament** — when more than two players are added, the game manager runs every matchup and reports a final winner.
+- **`TournamentSetup.py`** — the entry screen. Add two or more players (any mix of bots and humans), tune each bot's parameters with sliders, then start.
+- **`BackgammonGameManager.py`** — owns the board, initializes the current pair of players, and runs every matchup round-robin when more than two players are entered.
+- **`GUI.py`** — Tkinter board rendering and human move input. Only loaded when `GUI_MODE` is `True` in `Constants.py`.
+- **`Players/`** — one class per strategy, all sharing the `AI_Player` base. `Heuristic_Player`, `Min_Max_Player`, and `MCTS_Player` all call into `Eval_position.py`; `Neural_Player` loads a `.pth` checkpoint instead.
+- **`Eval_position.py`** — scores a board as a weighted sum of six features (prime structure, anchors, blots, race advantage, home board strength, captured pieces). The weights are the tunable surface exposed in the setup screen.
+- **`BoardTree.py`** — the game-tree node used by Minimax (depth-limited, no alpha-beta pruning) and MCTS (UCB1 selection).
+- **`HeuristicNet.py`** — the PyTorch feed-forward network and its training loop. It is trained against positions scored by `Eval_position.py`, so its win rate is measured against the same heuristic it learns from.
 
----
-
-## AI Strategies
-
-### Random
-Makes a uniformly random legal move. Useful as a baseline opponent.
-
-### Heuristic
-Evaluates board positions using a weighted sum of six features:
-
-| Feature | Description |
-|---|---|
-| `prime_structure` | Consecutive occupied points blocking the opponent |
-| `anchors` | Defensive anchor points in the opponent's home board |
-| `blots` | Penalty for exposed single checkers |
-| `race_advantage` | Overall checker progress toward the home board |
-| `home_board_strength` | Strength of the home board for blocking re-entry |
-| `captured_pieces` | Value of hitting and holding opponent pieces |
-
-All six weights are adjustable in the tournament setup screen.
-
-### Minimax
-Depth-limited minimax search using the heuristic evaluator above. Depth and all six weights are configurable. No alpha-beta pruning in the current implementation.
-
-### MCTS (Monte Carlo Tree Search)
-Explores the move tree using UCB1 selection, balancing exploration and exploitation. The exploration constant `c` and all six heuristic weights are configurable.
-
-### Neural Network
-A PyTorch feed-forward network trained on board positions scored by the heuristic evaluator. Multiple trained model checkpoints are included in `HeuristicNets/` and selectable from the setup screen.
-
-The chart below shows win rate against the heuristic player across training iterations. The network starts near random (~18%) and converges to ~60%, demonstrating that it successfully learns to outperform the hand-tuned heuristic it was trained against.
+The neural player's win rate against the heuristic player climbs from near-random (~18%) to ~60% over training iterations:
 
 ![Neural network win rate vs training iterations](analysis/neural_winrate_vs_training_iters.png)
 
----
+## 🤖 AI Strategies
 
-## Project Structure
-
-```
-Backgammon_Mini/
-├── run.py                    # Entry point — launches the tournament setup screen
-├── TournamentSetup.py        # Tkinter tournament configuration UI
-├── BackgammonGameManager.py  # Game loop, turn management, round-robin logic
-├── GUI.py                    # Board rendering and human input handling
-├── Constants.py              # All tunable flags and default values
-├── Eval_position.py          # Heuristic board evaluation functions
-├── BoardTree.py              # Game tree structure for Minimax and MCTS
-├── HeuristicNet.py           # Neural network definition and training utilities
-├── HeuristicNets/            # Saved model checkpoints (.pth files)
-├── Players/
-│   ├── Player.py             # Base class
-│   ├── Human_Player.py
-│   ├── AI_Player.py          # Base class for all AI players
-│   ├── Random_Player.py
-│   ├── Heuristic_Player.py
-│   ├── Min_Max_Player.py
-│   ├── MCTS_Player.py
-│   └── Neural_Player.py
-├── packaging/                # PyInstaller build specs for all platforms
-│   ├── windows_folder.spec
-│   ├── windows_onefile.spec
-│   ├── macos.spec
-│   └── hooks/
-├── .github/workflows/        # CI: automated builds for Windows and macOS
-├── analysis/                 # Training charts and evaluation scripts
-└── tests/                    # Automated test suite
-```
-
----
-
-## Installation
-
-### Requirements
-
-- Python 3.8+
-- PyTorch (`pip install torch`)
-- Tkinter (included with standard Python on Windows and macOS; on Linux: `sudo apt install python3-tk`)
-
-### Steps
-
-```sh
-git clone https://github.com/yarins0/Backgammon_Mini.git
-cd Backgammon_Mini
-pip install torch
-python run.py
-```
-
----
-
-## Usage
-
-### Tournament Setup Screen
-
-When you launch `run.py`, the setup screen opens. From there:
-
-1. Select a player type from the dropdown.
-2. Adjust the parameters that appear (heuristic weights, depth, exploration constant, or model file).
-3. Click **Add Player**. Repeat for each participant (minimum 2).
-4. Click **Start Tournament**.
-
-The game runs all matchups in round-robin order and displays the final winner when done.
-
-### Constants.py flags
-
-| Flag | Default | Description |
+| Strategy | File | Configurable at runtime |
 |---|---|---|
-| `GUI_MODE` | `True` | Set to `False` to run headless (useful for bulk training) |
-| `ONE_RUN` | `False` | Set to `True` to stop after one game instead of looping |
-| `NETWORK_TRAINING` | `False` | Set to `True` to train the neural network on completed games |
-| `DEBUG_MODE` | `False` | Set to `True` to print board state and move info to console |
+| Random | `Players/Random_Player.py` | — |
+| Heuristic | `Players/Heuristic_Player.py` | 6 evaluation weights |
+| Minimax | `Players/Min_Max_Player.py` | search depth, 6 evaluation weights |
+| MCTS | `Players/MCTS_Player.py` | UCB1 exploration constant `c`, 6 evaluation weights |
+| Neural Network | `Players/Neural_Player.py` | checkpoint file (`HeuristicNets/*.pth`) |
+| Human | `Players/Human_Player.py` | — |
 
----
+## 💻 Local Development
 
-## Distribution
+**Prerequisites**: Python 3.12 or 3.13, PyTorch, Tkinter (bundled with standard Python on Windows and macOS; on Linux install `python3-tk`).
 
-Build specs live in `packaging/`. Run all commands from the project root.
+1. Clone the repo and install PyTorch:
+   ```sh
+   git clone https://github.com/yarins0/Backgammon_Mini.git
+   cd Backgammon_Mini
+   pip install torch
+   ```
+2. Launch the tournament setup screen:
+   ```sh
+   python run.py
+   ```
+3. In the setup screen: pick a player type from the dropdown, adjust its parameters, click **Add Player**, and repeat for at least two participants. Click **Start Tournament** to run every matchup round-robin.
 
-```
-packaging/
-  windows_folder.spec    — Windows folder build (distribute as zip)
-  windows_onefile.spec   — Windows single-file build (portable .exe)
-  macos.spec             — macOS app bundle (must build on a Mac)
-  hooks/
-    rthook_dlldir.py     — Windows DLL search path fix
-```
+**Tests**: `python -m pytest tests/`
 
-### Windows — folder build (recommended)
+## ⚙️ Configuration
 
-Produces `dist/BackgammonAI/`. Zip the **entire folder** and share it — users extract and run `BackgammonAI.exe` from inside.
+All tunable flags live in `Constants.py` and take effect on the next run — none are read from the environment.
 
-```sh
-pip install pyinstaller
-python -m PyInstaller packaging/windows_folder.spec
-```
+| Flag | Default | Purpose |
+|---|---|---|
+| `GUI_MODE` | `True` | `False` skips the Tkinter GUI entirely — used for headless bulk training. |
+| `ONE_RUN` | `False` | `True` stops after one game instead of looping into the next tournament round. |
+| `NETWORK_TRAINING` | `False` | `True` trains the neural network on completed games as they finish. |
+| `DEBUG_MODE` | `False` | `True` prints board state and move info to the console. |
+| `SAFE_TEST` | `False` | `True` skips initializing pieces onto the start board, for testing AI logic in isolation. |
 
-Zip for upload:
-```powershell
-Compress-Archive -Path dist\BackgammonAI -DestinationPath BackgammonAI_windows.zip
-```
+## 📦 Distribution
 
-### Windows — single-file build
+`packaging/` holds PyInstaller specs for each platform; run every command from the project root.
 
-Produces one portable `dist/BackgammonAI.exe` that works from any location. **First launch takes ~60 seconds** while PyTorch extracts to a temp folder.
-
-```sh
-python -m PyInstaller packaging/windows_onefile.spec
-```
-
-### macOS — app bundle
-
-The easiest way is via GitHub Actions — no Mac required. Go to **Actions → Build macOS App → Run workflow**, enter your release tag, and the zip is uploaded to your GitHub Release automatically.
-
-To build manually on a Mac:
-
-```sh
-pip install pyinstaller torch
-python -m PyInstaller packaging/macos.spec
-zip -r BackgammonAI_macos.zip dist/BackgammonAI.app
+```mermaid
+flowchart LR
+    Push["workflow_dispatch<br/>with a release tag"] --> BuildWin["build-windows.yml<br/>windows-latest"]
+    Push --> BuildMac["build-macos.yml<br/>macos-latest"]
+    BuildWin --> ZipWin["BackgammonAI_windows.zip<br/>+ BackgammonAI.exe"]
+    BuildMac --> ZipMac["BackgammonAI_macos.zip"]
+    ZipWin --> Release["GitHub Release"]
+    ZipMac --> Release
 ```
 
----
+- **Windows — folder build** (`packaging/windows_folder.spec`, recommended): produces `dist/BackgammonAI/`. Zip the whole folder — users extract it and run `BackgammonAI.exe` from inside.
+  ```sh
+  pip install pyinstaller
+  python -m PyInstaller packaging/windows_folder.spec
+  ```
+- **Windows — single-file build** (`packaging/windows_onefile.spec`): produces one portable `dist/BackgammonAI.exe`. First launch takes about 60 seconds while PyTorch extracts to a temp folder. Uses `packaging/hooks/rthook_dlldir.py` to fix the DLL search path.
+  ```sh
+  python -m PyInstaller packaging/windows_onefile.spec
+  ```
+- **macOS** (`packaging/macos.spec`): build via `.github/workflows/build-macos.yml` (**Actions → Build macOS App → Run workflow**, enter a release tag) — no Mac required. To build manually on a Mac:
+  ```sh
+  pip install pyinstaller torch
+  python -m PyInstaller packaging/macos.spec
+  zip -r BackgammonAI_macos.zip dist/BackgammonAI.app
+  ```
 
-## Game Rules
+Both workflows are `workflow_dispatch`-triggered and upload the built zip straight to the GitHub Release matching the tag you enter.
+
+## 📁 Repo Layout
+
+```
+run.py                    # Entry point — launches the tournament setup screen
+TournamentSetup.py        # Tkinter tournament configuration UI
+BackgammonGameManager.py  # Game loop, turn management, round-robin logic
+GUI.py                    # Board rendering and human input handling
+Constants.py              # All tunable flags and default values
+Eval_position.py          # Heuristic board evaluation functions
+BoardTree.py              # Game tree structure for Minimax and MCTS
+HeuristicNet.py           # Neural network definition and training utilities
+HeuristicNets/            # Saved model checkpoints (.pth files)
+Players/                  # One class per strategy, sharing the AI_Player / Player base
+packaging/                # PyInstaller specs and hooks for Windows and macOS builds
+.github/workflows/        # workflow_dispatch builds that publish zips to a GitHub Release
+analysis/                 # Training charts and evaluation scripts
+tests/                    # pytest suite (BoardTree, evaluation, Player)
+```
+
+## 🎯 Game Rules
 
 Backgammon is a two-player game played on a 24-point board. Each player moves their 15 checkers in opposite directions according to two dice rolls, aiming to bear off all checkers first.
 
@@ -198,3 +154,12 @@ Backgammon is a two-player game played on a 24-point board. Each player moves th
 - The first player to bear off all 15 checkers wins.
 
 For full rules see the [official backgammon rules](https://usbgf.org/backgammon-basics-how-to-play/).
+
+## 👤 Author
+
+**Yarin Solomon** — Full Stack Developer
+
+- Email: [yarinso39@gmail.com](mailto:yarinso39@gmail.com)
+- GitHub: [github.com/yarins0](https://github.com/yarins0)
+- LinkedIn: [linkedin.com/in/yarin-solomon](https://www.linkedin.com/in/yarin-solomon/)
+- Portfolio: [yarin-lab](https://yarin-lab.vercel.app/)
